@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-10-05T16:38:09.684249",
+  "total_runs": 9,
+  "average_health_score": 100.0,
+  "best_health_score": 100.0,
+  "worst_health_score": 100.0,
+  "guardrail_violations": 0,
+  "guardrails": {
+    "attn_entropy_min": 0.08,
+    "attn_entropy_max": 0.35,
+    "diversity_min": 0.45,
+    "diversity_max": 0.85,
+    "top2_margin_min": 0.2,
+    "max_fanout": 16,
+    "latency_p95_max_ms": 50,
+    "embedding_coherence_min": 0.55
+  },
+  "summary_stats": {
+    "avg_attention_entropy": 0.2,
+    "avg_output_diversity": 0.6333333333333333,
+    "avg_accuracy": 0.73,
+    "avg_latency_ms": 33.666666666666664,
+    "avg_fanout": 12.0
+  },
+  "profile_comparison": {
+    "balanced": {
+      "('health_score', 'mean')": 100.0,
+      "('health_score', 'std')": 0.0,
+      "('accuracy', 'mean')": 0.7200000000000001,
+      "('attention_entropy', 'mean')": 0.20000000000000004,
+      "('output_diversity', 'mean')": 0.65,
+      "('latency_ms', 'mean')": 33.0
+    },
+    "conservative": {
+      "('health_score', 'mean')": 100.0,
+      "('health_score', 'std')": 0.0,
+      "('accuracy', 'mean')": 0.6599999999999999,
+      "('attention_entropy', 'mean')": 0.12,
+      "('output_diversity', 'mean')": 0.45,
+      "('latency_ms', 'mean')": 29.0
+    },
+    "creative": {
+      "('health_score', 'mean')": 100.0,
+      "('health_score', 'std')": 0.0,
+      "('accuracy', 'mean')": 0.8099999999999999,
+      "('attention_entropy', 'mean')": 0.28,
+      "('output_diversity', 'mean')": 0.8000000000000002,
+      "('latency_ms', 'mean')": 39.0
+    }
+  }
+}

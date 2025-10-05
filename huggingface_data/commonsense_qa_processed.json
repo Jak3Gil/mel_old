@@ -1,0 +1,752 @@
+[
+  {
+    "id": "csqa_0000",
+    "type": "commonsense_reasoning",
+    "question": "The sanctions against the school were a punishing blow, and they seemed to what the efforts the school had made to change?",
+    "choices": [
+      "ignore",
+      "enforce",
+      "authoritarian",
+      "yell at",
+      "avoid"
+    ],
+    "correct_answer": "ignore",
+    "answer_key": "A",
+    "melvin_input": "Question: The sanctions against the school were a punishing blow, and they seemed to what the efforts the school had made to change?\nChoices: ignore, enforce, authoritarian, yell at, avoid\nAnswer: ignore"
+  },
+  {
+    "id": "csqa_0001",
+    "type": "commonsense_reasoning",
+    "question": "Sammy wanted to go to where the people were.  Where might he go?",
+    "choices": [
+      "race track",
+      "populated areas",
+      "the desert",
+      "apartment",
+      "roadblock"
+    ],
+    "correct_answer": "populated areas",
+    "answer_key": "B",
+    "melvin_input": "Question: Sammy wanted to go to where the people were.  Where might he go?\nChoices: race track, populated areas, the desert, apartment, roadblock\nAnswer: populated areas"
+  },
+  {
+    "id": "csqa_0002",
+    "type": "commonsense_reasoning",
+    "question": "To locate a choker not located in a jewelry box or boutique where would you go?",
+    "choices": [
+      "jewelry store",
+      "neck",
+      "jewlery box",
+      "jewelry box",
+      "boutique"
+    ],
+    "correct_answer": "jewelry store",
+    "answer_key": "A",
+    "melvin_input": "Question: To locate a choker not located in a jewelry box or boutique where would you go?\nChoices: jewelry store, neck, jewlery box, jewelry box, boutique\nAnswer: jewelry store"
+  },
+  {
+    "id": "csqa_0003",
+    "type": "commonsense_reasoning",
+    "question": "Google Maps and other highway and street GPS services have replaced what?",
+    "choices": [
+      "united states",
+      "mexico",
+      "countryside",
+      "atlas",
+      "oceans"
+    ],
+    "correct_answer": "atlas",
+    "answer_key": "D",
+    "melvin_input": "Question: Google Maps and other highway and street GPS services have replaced what?\nChoices: united states, mexico, countryside, atlas, oceans\nAnswer: atlas"
+  },
+  {
+    "id": "csqa_0004",
+    "type": "commonsense_reasoning",
+    "question": "The fox walked from the city into the forest, what was it looking for?",
+    "choices": [
+      "pretty flowers.",
+      "hen house",
+      "natural habitat",
+      "storybook",
+      "dense forest"
+    ],
+    "correct_answer": "natural habitat",
+    "answer_key": "C",
+    "melvin_input": "Question: The fox walked from the city into the forest, what was it looking for?\nChoices: pretty flowers., hen house, natural habitat, storybook, dense forest\nAnswer: natural habitat"
+  },
+  {
+    "id": "csqa_0005",
+    "type": "commonsense_reasoning",
+    "question": "What home entertainment equipment requires cable?",
+    "choices": [
+      "radio shack",
+      "substation",
+      "cabinet",
+      "television",
+      "desk"
+    ],
+    "correct_answer": "television",
+    "answer_key": "D",
+    "melvin_input": "Question: What home entertainment equipment requires cable?\nChoices: radio shack, substation, cabinet, television, desk\nAnswer: television"
+  },
+  {
+    "id": "csqa_0006",
+    "type": "commonsense_reasoning",
+    "question": "The only baggage the woman checked was a drawstring bag, where was she heading with it?",
+    "choices": [
+      "garbage can",
+      "military",
+      "jewelry store",
+      "safe",
+      "airport"
+    ],
+    "correct_answer": "airport",
+    "answer_key": "E",
+    "melvin_input": "Question: The only baggage the woman checked was a drawstring bag, where was she heading with it?\nChoices: garbage can, military, jewelry store, safe, airport\nAnswer: airport"
+  },
+  {
+    "id": "csqa_0007",
+    "type": "commonsense_reasoning",
+    "question": "The forgotten leftovers had gotten quite old, he found it covered in mold in the back of his what?",
+    "choices": [
+      "carpet",
+      "refrigerator",
+      "breadbox",
+      "fridge",
+      "coach"
+    ],
+    "correct_answer": "refrigerator",
+    "answer_key": "B",
+    "melvin_input": "Question: The forgotten leftovers had gotten quite old, he found it covered in mold in the back of his what?\nChoices: carpet, refrigerator, breadbox, fridge, coach\nAnswer: refrigerator"
+  },
+  {
+    "id": "csqa_0008",
+    "type": "commonsense_reasoning",
+    "question": "What do people use to absorb extra ink from a fountain pen?",
+    "choices": [
+      "shirt pocket",
+      "calligrapher's hand",
+      "inkwell",
+      "desk drawer",
+      "blotter"
+    ],
+    "correct_answer": "blotter",
+    "answer_key": "E",
+    "melvin_input": "Question: What do people use to absorb extra ink from a fountain pen?\nChoices: shirt pocket, calligrapher's hand, inkwell, desk drawer, blotter\nAnswer: blotter"
+  },
+  {
+    "id": "csqa_0009",
+    "type": "commonsense_reasoning",
+    "question": "Where is a business restaurant likely to be located?",
+    "choices": [
+      "town",
+      "at hotel",
+      "mall",
+      "business sector",
+      "yellow pages"
+    ],
+    "correct_answer": "business sector",
+    "answer_key": "D",
+    "melvin_input": "Question: Where is a business restaurant likely to be located?\nChoices: town, at hotel, mall, business sector, yellow pages\nAnswer: business sector"
+  },
+  {
+    "id": "csqa_0010",
+    "type": "commonsense_reasoning",
+    "question": "Where do you put your grapes just before checking out?",
+    "choices": [
+      "mouth",
+      "grocery cart",
+      "super market",
+      "fruit basket",
+      "fruit market"
+    ],
+    "correct_answer": "grocery cart",
+    "answer_key": "B",
+    "melvin_input": "Question: Where do you put your grapes just before checking out?\nChoices: mouth, grocery cart, super market, fruit basket, fruit market\nAnswer: grocery cart"
+  },
+  {
+    "id": "csqa_0011",
+    "type": "commonsense_reasoning",
+    "question": "Before getting a divorce, what did the wife feel who was doing all the work?",
+    "choices": [
+      "harder",
+      "anguish",
+      "bitterness",
+      "tears",
+      "sadness"
+    ],
+    "correct_answer": "bitterness",
+    "answer_key": "C",
+    "melvin_input": "Question: Before getting a divorce, what did the wife feel who was doing all the work?\nChoices: harder, anguish, bitterness, tears, sadness\nAnswer: bitterness"
+  },
+  {
+    "id": "csqa_0012",
+    "type": "commonsense_reasoning",
+    "question": "Johnny sat on a bench and relaxed after doing a lot of work on his hobby.  Where is he?",
+    "choices": [
+      "state park",
+      "bus depot",
+      "garden",
+      "gym",
+      "rest area"
+    ],
+    "correct_answer": "garden",
+    "answer_key": "C",
+    "melvin_input": "Question: Johnny sat on a bench and relaxed after doing a lot of work on his hobby.  Where is he?\nChoices: state park, bus depot, garden, gym, rest area\nAnswer: garden"
+  },
+  {
+    "id": "csqa_0013",
+    "type": "commonsense_reasoning",
+    "question": "James was cooling off two quickly.  He would die if he didn't find some way to stop what?",
+    "choices": [
+      "loss of heat",
+      "revenge",
+      "expansion",
+      "relaxation",
+      "calm down"
+    ],
+    "correct_answer": "loss of heat",
+    "answer_key": "A",
+    "melvin_input": "Question: James was cooling off two quickly.  He would die if he didn't find some way to stop what?\nChoices: loss of heat, revenge, expansion, relaxation, calm down\nAnswer: loss of heat"
+  },
+  {
+    "id": "csqa_0014",
+    "type": "commonsense_reasoning",
+    "question": "Of all the rooms in a house it was his favorite, the aromas always drew him to the what?",
+    "choices": [
+      "yard",
+      "basement",
+      "kitchen",
+      "living room",
+      "garden"
+    ],
+    "correct_answer": "kitchen",
+    "answer_key": "C",
+    "melvin_input": "Question: Of all the rooms in a house it was his favorite, the aromas always drew him to the what?\nChoices: yard, basement, kitchen, living room, garden\nAnswer: kitchen"
+  },
+  {
+    "id": "csqa_0015",
+    "type": "commonsense_reasoning",
+    "question": "Bill is stuck in marsh when a man comes up to him peaking Cajun, where is he?",
+    "choices": [
+      "low lands",
+      "new york",
+      "forest",
+      "louisiana",
+      "everglades"
+    ],
+    "correct_answer": "louisiana",
+    "answer_key": "D",
+    "melvin_input": "Question: Bill is stuck in marsh when a man comes up to him peaking Cajun, where is he?\nChoices: low lands, new york, forest, louisiana, everglades\nAnswer: louisiana"
+  },
+  {
+    "id": "csqa_0016",
+    "type": "commonsense_reasoning",
+    "question": "What is it called when you slowly cook using a grill?",
+    "choices": [
+      "backyard",
+      "restaurant",
+      "crockpot",
+      "neighbor's house",
+      "barbeque"
+    ],
+    "correct_answer": "barbeque",
+    "answer_key": "E",
+    "melvin_input": "Question: What is it called when you slowly cook using a grill?\nChoices: backyard, restaurant, crockpot, neighbor's house, barbeque\nAnswer: barbeque"
+  },
+  {
+    "id": "csqa_0017",
+    "type": "commonsense_reasoning",
+    "question": "What type of person typically contracts illness?",
+    "choices": [
+      "hospital",
+      "head",
+      "sick person",
+      "elderly person",
+      "doctor's office"
+    ],
+    "correct_answer": "elderly person",
+    "answer_key": "D",
+    "melvin_input": "Question: What type of person typically contracts illness?\nChoices: hospital, head, sick person, elderly person, doctor's office\nAnswer: elderly person"
+  },
+  {
+    "id": "csqa_0018",
+    "type": "commonsense_reasoning",
+    "question": "Where would you expect to find a pizzeria while shopping?",
+    "choices": [
+      "chicago",
+      "street",
+      "little italy",
+      "food court",
+      "capital cities"
+    ],
+    "correct_answer": "food court",
+    "answer_key": "D",
+    "melvin_input": "Question: Where would you expect to find a pizzeria while shopping?\nChoices: chicago, street, little italy, food court, capital cities\nAnswer: food court"
+  },
+  {
+    "id": "csqa_0019",
+    "type": "commonsense_reasoning",
+    "question": "When eating everything on the tasting menu, what does one tend to feel?",
+    "choices": [
+      "full stomach",
+      "getting full",
+      "gaining weight",
+      "sick",
+      "satisfaction"
+    ],
+    "correct_answer": "getting full",
+    "answer_key": "B",
+    "melvin_input": "Question: When eating everything on the tasting menu, what does one tend to feel?\nChoices: full stomach, getting full, gaining weight, sick, satisfaction\nAnswer: getting full"
+  },
+  {
+    "id": "csqa_0020",
+    "type": "commonsense_reasoning",
+    "question": "What does playing soccer for a long time lead to?",
+    "choices": [
+      "excitement",
+      "fatigue",
+      "anger",
+      "hurting",
+      "getting tired"
+    ],
+    "correct_answer": "getting tired",
+    "answer_key": "E",
+    "melvin_input": "Question: What does playing soccer for a long time lead to?\nChoices: excitement, fatigue, anger, hurting, getting tired\nAnswer: getting tired"
+  },
+  {
+    "id": "csqa_0021",
+    "type": "commonsense_reasoning",
+    "question": "Which entrance would you use if you do not want to use the back entrance?",
+    "choices": [
+      "side",
+      "main",
+      "anterior",
+      "current",
+      "front"
+    ],
+    "correct_answer": "main",
+    "answer_key": "B",
+    "melvin_input": "Question: Which entrance would you use if you do not want to use the back entrance?\nChoices: side, main, anterior, current, front\nAnswer: main"
+  },
+  {
+    "id": "csqa_0022",
+    "type": "commonsense_reasoning",
+    "question": "You can share files with someone if you have a connection to a what?",
+    "choices": [
+      "freeway",
+      "radio",
+      "wires",
+      "computer network",
+      "electrical circuit"
+    ],
+    "correct_answer": "computer network",
+    "answer_key": "D",
+    "melvin_input": "Question: You can share files with someone if you have a connection to a what?\nChoices: freeway, radio, wires, computer network, electrical circuit\nAnswer: computer network"
+  },
+  {
+    "id": "csqa_0023",
+    "type": "commonsense_reasoning",
+    "question": "The accelerator was controller via a hand throttle, and the foot pedals controlled the steering in the small what?",
+    "choices": [
+      "car",
+      "fuel system",
+      "accelerate",
+      "boat",
+      "airplane"
+    ],
+    "correct_answer": "airplane",
+    "answer_key": "E",
+    "melvin_input": "Question: The accelerator was controller via a hand throttle, and the foot pedals controlled the steering in the small what?\nChoices: car, fuel system, accelerate, boat, airplane\nAnswer: airplane"
+  },
+  {
+    "id": "csqa_0024",
+    "type": "commonsense_reasoning",
+    "question": "Sean was lying about the body, but he was very scared.  He constantly worried about what?",
+    "choices": [
+      "the reward money",
+      "hurt feelings",
+      "being found out",
+      "problems",
+      "trouble"
+    ],
+    "correct_answer": "being found out",
+    "answer_key": "C",
+    "melvin_input": "Question: Sean was lying about the body, but he was very scared.  He constantly worried about what?\nChoices: the reward money, hurt feelings, being found out, problems, trouble\nAnswer: being found out"
+  },
+  {
+    "id": "csqa_0025",
+    "type": "commonsense_reasoning",
+    "question": "The drug kingpin told his man to run errands, this was code to go to all the dealers to do what they had?",
+    "choices": [
+      "park",
+      "make time for",
+      "receive instructions",
+      "take money",
+      "leave work"
+    ],
+    "correct_answer": "take money",
+    "answer_key": "D",
+    "melvin_input": "Question: The drug kingpin told his man to run errands, this was code to go to all the dealers to do what they had?\nChoices: park, make time for, receive instructions, take money, leave work\nAnswer: take money"
+  },
+  {
+    "id": "csqa_0026",
+    "type": "commonsense_reasoning",
+    "question": "Though he could've kept going his body appreciated the rest, it had been constantly what during the day?",
+    "choices": [
+      "walk",
+      "lay down",
+      "working",
+      "moving",
+      "exercise"
+    ],
+    "correct_answer": "moving",
+    "answer_key": "D",
+    "melvin_input": "Question: Though he could've kept going his body appreciated the rest, it had been constantly what during the day?\nChoices: walk, lay down, working, moving, exercise\nAnswer: moving"
+  },
+  {
+    "id": "csqa_0027",
+    "type": "commonsense_reasoning",
+    "question": "Too many people want exotic snakes.  The demand is driving what to carry them?",
+    "choices": [
+      "ditch",
+      "shop",
+      "north america",
+      "pet shops",
+      "outdoors"
+    ],
+    "correct_answer": "pet shops",
+    "answer_key": "D",
+    "melvin_input": "Question: Too many people want exotic snakes.  The demand is driving what to carry them?\nChoices: ditch, shop, north america, pet shops, outdoors\nAnswer: pet shops"
+  },
+  {
+    "id": "csqa_0028",
+    "type": "commonsense_reasoning",
+    "question": "Joe suffered many consequences from stabbing a stranger to death.   Among them, the family of the victim did something to him. What was that?",
+    "choices": [
+      "knife wounds",
+      "buy a gun",
+      "bleeding",
+      "jail time",
+      "law suit"
+    ],
+    "correct_answer": "law suit",
+    "answer_key": "E",
+    "melvin_input": "Question: Joe suffered many consequences from stabbing a stranger to death.   Among them, the family of the victim did something to him. What was that?\nChoices: knife wounds, buy a gun, bleeding, jail time, law suit\nAnswer: law suit"
+  },
+  {
+    "id": "csqa_0029",
+    "type": "commonsense_reasoning",
+    "question": "To prevent any glare during the big football game he made sure to clean the dust of his what?",
+    "choices": [
+      "television",
+      "attic",
+      "corner",
+      "they cannot clean corner and library during football match they cannot need that",
+      "ground"
+    ],
+    "correct_answer": "television",
+    "answer_key": "A",
+    "melvin_input": "Question: To prevent any glare during the big football game he made sure to clean the dust of his what?\nChoices: television, attic, corner, they cannot clean corner and library during football match they cannot need that, ground\nAnswer: television"
+  },
+  {
+    "id": "csqa_0030",
+    "type": "commonsense_reasoning",
+    "question": "I have something in my head I want to share, what ways can I do that?",
+    "choices": [
+      "write an essay",
+      "organize thoughts",
+      "speak information",
+      "summarize main points",
+      "have information"
+    ],
+    "correct_answer": "speak information",
+    "answer_key": "C",
+    "melvin_input": "Question: I have something in my head I want to share, what ways can I do that?\nChoices: write an essay, organize thoughts, speak information, summarize main points, have information\nAnswer: speak information"
+  },
+  {
+    "id": "csqa_0031",
+    "type": "commonsense_reasoning",
+    "question": "He wanted a house that was gated off from other places, where should he start looking?",
+    "choices": [
+      "neighborhood",
+      "subdivision",
+      "city",
+      "suburbs",
+      "street"
+    ],
+    "correct_answer": "subdivision",
+    "answer_key": "B",
+    "melvin_input": "Question: He wanted a house that was gated off from other places, where should he start looking?\nChoices: neighborhood, subdivision, city, suburbs, street\nAnswer: subdivision"
+  },
+  {
+    "id": "csqa_0032",
+    "type": "commonsense_reasoning",
+    "question": "Where in Southern Europe would you find many canals?",
+    "choices": [
+      "michigan",
+      "new york",
+      "amsterdam",
+      "venice",
+      "bridge"
+    ],
+    "correct_answer": "venice",
+    "answer_key": "D",
+    "melvin_input": "Question: Where in Southern Europe would you find many canals?\nChoices: michigan, new york, amsterdam, venice, bridge\nAnswer: venice"
+  },
+  {
+    "id": "csqa_0033",
+    "type": "commonsense_reasoning",
+    "question": "What would a camper need to do before he or she can start cooking food?",
+    "choices": [
+      "make breakfast",
+      "go hiking",
+      "pack or bag",
+      "light fire",
+      "grab a match"
+    ],
+    "correct_answer": "light fire",
+    "answer_key": "D",
+    "melvin_input": "Question: What would a camper need to do before he or she can start cooking food?\nChoices: make breakfast, go hiking, pack or bag, light fire, grab a match\nAnswer: light fire"
+  },
+  {
+    "id": "csqa_0034",
+    "type": "commonsense_reasoning",
+    "question": "What could happen to a paper if you leave it outside even if it does not move?",
+    "choices": [
+      "one material often recycled",
+      "ripped",
+      "saturated with water",
+      "one dimensional",
+      "crumpled"
+    ],
+    "correct_answer": "saturated with water",
+    "answer_key": "C",
+    "melvin_input": "Question: What could happen to a paper if you leave it outside even if it does not move?\nChoices: one material often recycled, ripped, saturated with water, one dimensional, crumpled\nAnswer: saturated with water"
+  },
+  {
+    "id": "csqa_0035",
+    "type": "commonsense_reasoning",
+    "question": "Mark's semen was very thick, but after his vasectomy it was also what?",
+    "choices": [
+      "blank",
+      "sparse",
+      "thin",
+      "clear",
+      "free flowing"
+    ],
+    "correct_answer": "clear",
+    "answer_key": "D",
+    "melvin_input": "Question: Mark's semen was very thick, but after his vasectomy it was also what?\nChoices: blank, sparse, thin, clear, free flowing\nAnswer: clear"
+  },
+  {
+    "id": "csqa_0036",
+    "type": "commonsense_reasoning",
+    "question": "What is a great place to lay in the sun?",
+    "choices": [
+      "in the basement",
+      "west",
+      "solar system",
+      "beach",
+      "beans"
+    ],
+    "correct_answer": "beach",
+    "answer_key": "D",
+    "melvin_input": "Question: What is a great place to lay in the sun?\nChoices: in the basement, west, solar system, beach, beans\nAnswer: beach"
+  },
+  {
+    "id": "csqa_0037",
+    "type": "commonsense_reasoning",
+    "question": "Where would you find a seafood restaurant in the east coast of North America?",
+    "choices": [
+      "maine",
+      "boston",
+      "beach town",
+      "coastal cities",
+      "ocean"
+    ],
+    "correct_answer": "maine",
+    "answer_key": "A",
+    "melvin_input": "Question: Where would you find a seafood restaurant in the east coast of North America?\nChoices: maine, boston, beach town, coastal cities, ocean\nAnswer: maine"
+  },
+  {
+    "id": "csqa_0038",
+    "type": "commonsense_reasoning",
+    "question": "The president is the leader of what institution?",
+    "choices": [
+      "walmart",
+      "white house",
+      "country",
+      "corporation",
+      "government"
+    ],
+    "correct_answer": "government",
+    "answer_key": "E",
+    "melvin_input": "Question: The president is the leader of what institution?\nChoices: walmart, white house, country, corporation, government\nAnswer: government"
+  },
+  {
+    "id": "csqa_0039",
+    "type": "commonsense_reasoning",
+    "question": "Sitting to close while watching TV can cause what sort of pain?",
+    "choices": [
+      "brain problems",
+      "laziness",
+      "get fat",
+      "headache",
+      "laughter"
+    ],
+    "correct_answer": "headache",
+    "answer_key": "D",
+    "melvin_input": "Question: Sitting to close while watching TV can cause what sort of pain?\nChoices: brain problems, laziness, get fat, headache, laughter\nAnswer: headache"
+  },
+  {
+    "id": "csqa_0040",
+    "type": "commonsense_reasoning",
+    "question": "Where is a bald eagle safe?",
+    "choices": [
+      "pine tree",
+      "open country",
+      "in washington",
+      "wildlife refuge",
+      "sky"
+    ],
+    "correct_answer": "wildlife refuge",
+    "answer_key": "D",
+    "melvin_input": "Question: Where is a bald eagle safe?\nChoices: pine tree, open country, in washington, wildlife refuge, sky\nAnswer: wildlife refuge"
+  },
+  {
+    "id": "csqa_0041",
+    "type": "commonsense_reasoning",
+    "question": "The game promised it was free, but the child's parents soon found themselves doing what for microtransactions?",
+    "choices": [
+      "costly",
+      "captive",
+      "contained",
+      "paying",
+      "caught"
+    ],
+    "correct_answer": "paying",
+    "answer_key": "D",
+    "melvin_input": "Question: The game promised it was free, but the child's parents soon found themselves doing what for microtransactions?\nChoices: costly, captive, contained, paying, caught\nAnswer: paying"
+  },
+  {
+    "id": "csqa_0042",
+    "type": "commonsense_reasoning",
+    "question": "What kind of driving leads to accidents?",
+    "choices": [
+      "stressful",
+      "dangerous",
+      "fun",
+      "illegal",
+      "deadly"
+    ],
+    "correct_answer": "dangerous",
+    "answer_key": "B",
+    "melvin_input": "Question: What kind of driving leads to accidents?\nChoices: stressful, dangerous, fun, illegal, deadly\nAnswer: dangerous"
+  },
+  {
+    "id": "csqa_0043",
+    "type": "commonsense_reasoning",
+    "question": "What is eating too much dinner likely to result in?",
+    "choices": [
+      "tiredness",
+      "living longer",
+      "stomach ache",
+      "illness",
+      "acid reflux"
+    ],
+    "correct_answer": "stomach ache",
+    "answer_key": "C",
+    "melvin_input": "Question: What is eating too much dinner likely to result in?\nChoices: tiredness, living longer, stomach ache, illness, acid reflux\nAnswer: stomach ache"
+  },
+  {
+    "id": "csqa_0044",
+    "type": "commonsense_reasoning",
+    "question": "What is a person chatting with friends likely hoping to accomplish?",
+    "choices": [
+      "gathering of information",
+      "communication",
+      "feel relaxed",
+      "kill boredom",
+      "social bonding"
+    ],
+    "correct_answer": "social bonding",
+    "answer_key": "E",
+    "melvin_input": "Question: What is a person chatting with friends likely hoping to accomplish?\nChoices: gathering of information, communication, feel relaxed, kill boredom, social bonding\nAnswer: social bonding"
+  },
+  {
+    "id": "csqa_0045",
+    "type": "commonsense_reasoning",
+    "question": "Jame's bare feet were burned as he walked, because the sunshine had made the surface hot.  Where might he have been?",
+    "choices": [
+      "disneyland",
+      "snow",
+      "windowsill",
+      "street",
+      "summer"
+    ],
+    "correct_answer": "street",
+    "answer_key": "D",
+    "melvin_input": "Question: Jame's bare feet were burned as he walked, because the sunshine had made the surface hot.  Where might he have been?\nChoices: disneyland, snow, windowsill, street, summer\nAnswer: street"
+  },
+  {
+    "id": "csqa_0046",
+    "type": "commonsense_reasoning",
+    "question": "A fox was thirsty searching for water during the drought, where was he?",
+    "choices": [
+      "painting",
+      "hen house",
+      "california",
+      "virginia",
+      "movie hall"
+    ],
+    "correct_answer": "california",
+    "answer_key": "C",
+    "melvin_input": "Question: A fox was thirsty searching for water during the drought, where was he?\nChoices: painting, hen house, california, virginia, movie hall\nAnswer: california"
+  },
+  {
+    "id": "csqa_0047",
+    "type": "commonsense_reasoning",
+    "question": "What might be the result of a season of successful skiing?",
+    "choices": [
+      "finish line",
+      "broken bones",
+      "broken legs",
+      "chapped lips",
+      "healthy body"
+    ],
+    "correct_answer": "healthy body",
+    "answer_key": "E",
+    "melvin_input": "Question: What might be the result of a season of successful skiing?\nChoices: finish line, broken bones, broken legs, chapped lips, healthy body\nAnswer: healthy body"
+  },
+  {
+    "id": "csqa_0048",
+    "type": "commonsense_reasoning",
+    "question": "The sensor would just the distance then set off an alarm, the installation expert explained it was called a what kind of sensor?",
+    "choices": [
+      "near",
+      "closeness",
+      "here",
+      "proximity",
+      "this"
+    ],
+    "correct_answer": "proximity",
+    "answer_key": "D",
+    "melvin_input": "Question: The sensor would just the distance then set off an alarm, the installation expert explained it was called a what kind of sensor?\nChoices: near, closeness, here, proximity, this\nAnswer: proximity"
+  },
+  {
+    "id": "csqa_0049",
+    "type": "commonsense_reasoning",
+    "question": "The man was eating lunch, but rushed when he looked at his watch, why did he rush?",
+    "choices": [
+      "gain weight",
+      "late for work",
+      "heartburn",
+      "bad breath",
+      "early for work"
+    ],
+    "correct_answer": "late for work",
+    "answer_key": "B",
+    "melvin_input": "Question: The man was eating lunch, but rushed when he looked at his watch, why did he rush?\nChoices: gain weight, late for work, heartburn, bad breath, early for work\nAnswer: late for work"
+  }
+]
