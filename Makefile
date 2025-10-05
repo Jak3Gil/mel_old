@@ -25,9 +25,13 @@ UCA_SOURCES = src/uca/PerceptionEngine.cpp src/uca/ReasoningEngine.cpp src/uca/L
 UCA_HEADERS = src/uca/uca_types.h src/uca/PerceptionEngine.hpp src/uca/ReasoningEngine.hpp src/uca/LearningEngine.hpp src/uca/ReflectionEngine.hpp src/uca/OutputManager.hpp src/uca/FeedbackBus.hpp
 UCA_OBJECTS = $(UCA_SOURCES:.cpp=.o)
 
+# Evaluation source files
+EVALUATION_SOURCES = evaluation/EvaluationAdapter.cpp evaluation/ConfidenceCalibration.cpp evaluation/HuggingFaceIntegration.cpp evaluation/AblationTesting.cpp evaluation/EvaluationFramework.cpp
+EVALUATION_OBJECTS = $(EVALUATION_SOURCES:.cpp=.o)
+
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)
-ALL_OBJECTS = $(OBJECTS) $(UCA_OBJECTS)
+ALL_OBJECTS = $(OBJECTS) $(UCA_OBJECTS) $(EVALUATION_OBJECTS)
 
 # Targets
 LIBRARY = libmelvin.so
@@ -155,6 +159,19 @@ $(LLM_UPGRADE_TEST): llm_upgrade_test.cpp $(LIBRARY)
 $(LLM_UPGRADE_SUMMARY): llm_upgrade_summary.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+# Build the evaluation framework
+EVALUATION_FRAMEWORK = evaluation_framework
+$(EVALUATION_FRAMEWORK): evaluation/main.cpp $(EVALUATION_OBJECTS) $(LIBRARY)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(EVALUATION_OBJECTS) -L. -lmelvin $(INCLUDES)
+
+# Build the growth monitor tool
+tools/growth_monitor: tools/growth_monitor.cpp
+	$(CXX) -std=c++20 -O2 -o $@ $<
+
+# Build the micro HUD tool
+tools/micro_hud: tools/micro_hud.cpp
+	$(CXX) -std=c++20 -O2 -o $@ $<
+
 # Build the verification framework
 verification_framework: verification_framework.cpp $(LIBRARY)
 	$(CXX) $(CXXFLAGS) -o $@ $< -L. -lmelvin $(INCLUDES)
@@ -183,11 +200,15 @@ melvin_inject: melvin_inject.cpp $(LIBRARY)
 src/uca/%.o: src/uca/%.cpp $(UCA_HEADERS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDES)
 
+# Compile evaluation source files
+evaluation/%.o: evaluation/%.cpp evaluation/EvaluationFramework.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDES)
+
 # API source files are now integrated into melvin.cpp
 
 # Clean build artifacts (keep brains/, genomes/, metrics/)
 clean:
-	rm -f $(OBJECTS) $(LIBRARY) $(OUTPUT_EVOLUTION_DEMO) $(META_DEMO) $(SIMPLE_META_DEMO) $(MINIMAL_META_DEMO) $(INTEGRATED_META_DEMO) $(SIMPLE_INTEGRATED_DEMO) $(CONSTANT_MEMORY_DEMO) $(BIOCHEM_TEST) $(ANCHOR_TEST) $(NEURAL_TEST) $(ADVANCED_NEURAL_TEST) $(PROOF_TEST) $(GRAPH_PROOF_TEST) $(SIMPLE_PROOF_TEST) $(NEURAL_GRAPH_TEST) $(AGI_TEST) $(COMPREHENSIVE_TEST) $(MELVIN_PROOF) test_abstraction melvin_inject $(UCA_TEST)
+	rm -f $(OBJECTS) $(UCA_OBJECTS) $(EVALUATION_OBJECTS) $(LIBRARY) $(OUTPUT_EVOLUTION_DEMO) $(META_DEMO) $(SIMPLE_META_DEMO) $(MINIMAL_META_DEMO) $(INTEGRATED_META_DEMO) $(SIMPLE_INTEGRATED_DEMO) $(CONSTANT_MEMORY_DEMO) $(BIOCHEM_TEST) $(ANCHOR_TEST) $(NEURAL_TEST) $(ADVANCED_NEURAL_TEST) $(PROOF_TEST) $(GRAPH_PROOF_TEST) $(SIMPLE_PROOF_TEST) $(NEURAL_GRAPH_TEST) $(AGI_TEST) $(COMPREHENSIVE_TEST) $(MELVIN_PROOF) test_abstraction melvin_inject $(UCA_TEST) $(EVALUATION_FRAMEWORK) tools/growth_monitor tools/micro_hud
 
 # Deep clean (remove all generated files)
 distclean: clean
@@ -291,7 +312,8 @@ run-verification-profile: verification_framework
 		echo "Usage: make run-verification-profile profile=Conservative seed=42"; \
 		exit 1; \
 	fi
-	PROFILE=$(profile) SEED=$(seed) ./verification_framework
+	@mkdir -p out
+	PROFILE=$(profile) SEED=$(seed) DUMP_METRICS=out/metrics_live.csv ./verification_framework
 
 # Run the LLM smoke test
 run-llm-smoke: llm_smoke_test
@@ -324,6 +346,132 @@ test-experiment: $(MELVIN_SCHEDULER)
 # Run quick experiment
 test-quick: $(MELVIN_SCHEDULER)
 	python3 experiment_runner.py --quick
+
+# HuggingFace dataset integration targets
+run-hf-single: 
+	python3 huggingface_integration.py --dataset commonsense_qa --max-samples 50
+
+run-hf-comprehensive: 
+	python3 huggingface_integration.py --comprehensive --max-samples 100
+
+run-hf-multi: 
+	python3 huggingface_integration.py --datasets commonsense_qa piqa gsm8k --max-samples 75
+
+# Run HuggingFace test suite
+run-hf-tests: run-hf-comprehensive
+	@echo "🧠 Running comprehensive HuggingFace test suite..."
+	./huggingface_data/test_comprehensive_multi_dataset.sh
+
+# Run analytics on HuggingFace results
+analyze-hf-results:
+	python3 analysis/verify_results.py --input-dir huggingface_data/melvin_tests --plot-all --domain-analysis
+
+# Run full HuggingFace pipeline
+run-hf-pipeline: run-hf-comprehensive run-hf-tests analyze-hf-results
+	@echo "✅ HuggingFace pipeline completed!"
+
+# Run Streamlit dashboard
+run-dashboard:
+	streamlit run analysis/dashboard.py
+
+# Install Python dependencies for HuggingFace integration
+install-hf-deps:
+	pip install datasets transformers pandas matplotlib seaborn plotly streamlit
+
+# C++ Evaluation Framework targets
+run-eval-single: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --dataset commonsense_qa --max-samples 50
+
+run-eval-comprehensive: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --comprehensive --max-samples 100
+
+run-eval-ablation: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --ablation --dataset commonsense_qa
+
+run-eval-robustness: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --robustness --dataset commonsense_qa
+
+run-eval-calibration: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --calibration --dataset commonsense_qa
+
+# CI Gate validation
+run-ci-gate: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --ci-gate --datasets commonsense_qa,piqa,gsm8k
+
+# Full evaluation pipeline
+run-eval-pipeline: $(EVALUATION_FRAMEWORK)
+	./$(EVALUATION_FRAMEWORK) --full-pipeline --max-samples 100
+
+# Replay failed prediction
+run-replay: $(EVALUATION_FRAMEWORK)
+	@if [ -z "$(replay_file)" ]; then \
+		echo "Usage: make run-replay replay_file=path/to/replay.json"; \
+		exit 1; \
+	fi
+	./$(EVALUATION_FRAMEWORK) --replay $(replay_file)
+
+# Live growth monitoring
+watch-growth: tools/growth_monitor
+	@mkdir -p out
+	@echo "📈 Starting Melvin Growth Monitor..."
+	@echo "📊 Monitoring: out/metrics_live.csv"
+	@echo "🔄 Press Ctrl+C to exit"
+	@./tools/growth_monitor out/metrics_live.csv 30
+
+# Watch growth with custom tail size
+watch-growth-tail: tools/growth_monitor
+	@mkdir -p out
+	@if [ -z "$(tail)" ]; then \
+		echo "Usage: make watch-growth-tail tail=50"; \
+		exit 1; \
+	fi
+	@./tools/growth_monitor out/metrics_live.csv $(tail)
+
+# Simple CSV tail viewer (alternative to growth monitor)
+watch-csv:
+	@mkdir -p out
+	@echo "📊 Watching CSV with simple tail..."
+	@watch -n 0.5 'tail -n 20 out/metrics_live.csv | column -t -s,'
+
+# Micro HUD for single-test runs
+watch-micro: tools/micro_hud
+	@mkdir -p out
+	@echo "📊 Starting Micro HUD..."
+	@echo "📈 Terminal 1: Run your evaluation with DUMP_METRICS=out/metrics_live.csv"
+	@echo "📊 Terminal 2: This micro HUD will show 1-line progress"
+	@echo ""
+	@./tools/micro_hud out/metrics_live.csv
+
+# Enhanced monitoring with composition tracking
+demo-enhanced:
+	@chmod +x demo_enhanced_monitoring.sh
+	@./demo_enhanced_monitoring.sh
+
+# Log rotation support
+rotate-log:
+	@mkdir -p out
+	@ts=$$(date +%Y%m%d_%H%M%S); \
+	echo "📊 Rotating log to out/metrics_$$ts.csv"; \
+	export DUMP_METRICS="out/metrics_$$ts.csv"
+
+# Named pipe for zero-disk monitoring
+setup-pipe:
+	@mkdir -p out
+	@mkfifo out/metrics.pipe 2>/dev/null || true
+	@echo "📊 Created named pipe: out/metrics.pipe"
+	@echo "📈 Set DUMP_METRICS=out/metrics.pipe in your evaluation"
+	@echo "📊 Consume with: column -t -s, < out/metrics.pipe"
+
+# Run evaluation with live monitoring
+run-eval-with-monitor: $(EVALUATION_FRAMEWORK) tools/growth_monitor
+	@mkdir -p out
+	@echo "🚀 Starting evaluation with live monitoring..."
+	@echo "📈 Terminal 1: Running evaluation"
+	@echo "📊 Terminal 2: Run 'make watch-growth' for live dashboard"
+	@echo ""
+	@echo "Starting evaluation in 3 seconds..."
+	@sleep 3
+	./$(EVALUATION_FRAMEWORK) --dataset commonsense_qa --max-samples 50 --metrics-log out/metrics_live.csv
 
 # Test the basic functionality
 test: $(LIBRARY)
@@ -388,6 +536,30 @@ help:
 	@echo "  test-smoke      - Run 1-minute smoke tests"
 	@echo "  test-experiment - Run full experiment suite"
 	@echo "  test-quick      - Run quick 2-minute experiments"
+	@echo "  run-hf-single   - Download and process single HuggingFace dataset"
+	@echo "  run-hf-comprehensive - Run comprehensive multi-dataset HuggingFace suite"
+	@echo "  run-hf-multi    - Run multi-dataset HuggingFace validation"
+	@echo "  run-hf-tests    - Run HuggingFace test suite through Melvin"
+	@echo "  analyze-hf-results - Analyze HuggingFace test results with visualizations"
+	@echo "  run-hf-pipeline - Run complete HuggingFace validation pipeline"
+	@echo "  run-dashboard   - Launch Streamlit regression dashboard"
+	@echo "  install-hf-deps - Install Python dependencies for HuggingFace integration"
+	@echo "  run-eval-single - Run C++ evaluation on single dataset"
+	@echo "  run-eval-comprehensive - Run comprehensive C++ evaluation suite"
+	@echo "  run-eval-ablation - Run C++ ablation testing"
+	@echo "  run-eval-robustness - Run C++ robustness testing"
+	@echo "  run-eval-calibration - Run C++ confidence calibration"
+	@echo "  run-ci-gate - Run C++ CI gate validation"
+	@echo "  run-eval-pipeline - Run full C++ evaluation pipeline"
+	@echo "  run-replay - Replay failed prediction from JSON"
+	@echo "  watch-growth - Live ASCII dashboard of Melvin's graph growth"
+	@echo "  watch-growth-tail - Live dashboard with custom tail size"
+	@echo "  watch-csv - Simple CSV tail viewer"
+	@echo "  watch-micro - Micro HUD (1-line progress bar for single tests)"
+	@echo "  demo-enhanced - Enhanced demo with composition tracking"
+	@echo "  rotate-log - Rotate metrics log with timestamp"
+	@echo "  setup-pipe - Create named pipe for zero-disk monitoring"
+	@echo "  run-eval-with-monitor - Run evaluation with live monitoring setup"
 	@echo "  sanity-check   - Run 3-generation sanity check (removed)"
 	@echo "  full-evolution - Run full 100-generation evolution (removed)"
 	@echo "  test           - Run basic tests"
@@ -395,4 +567,4 @@ help:
 	@echo "  release        - Build with optimizations"
 	@echo "  help           - Show this help message"
 
-.PHONY: all clean distclean install run-meta-demo run-simple-meta-demo run-minimal-meta-demo run-integrated-meta-demo run-simple-integrated-demo run-constant-memory-demo run-biochem-test run-neural-test run-advanced-neural-test run-proof-test run-graph-proof-test run-simple-proof-test run-neural-graph-test run-melvin-proof run-abstraction-test run-comprehensive-test run-llm-upgrade-test run-verification run-llm-smoke run-inject run-melvin run-melvin-config test-uca test-uca-ablation test-smoke test-experiment test-quick test debug release help
+.PHONY: all clean distclean install run-meta-demo run-simple-meta-demo run-minimal-meta-demo run-integrated-meta-demo run-simple-integrated-demo run-constant-memory-demo run-biochem-test run-neural-test run-advanced-neural-test run-proof-test run-graph-proof-test run-simple-proof-test run-neural-graph-test run-melvin-proof run-abstraction-test run-comprehensive-test run-llm-upgrade-test run-verification run-llm-smoke run-inject run-melvin run-melvin-config test-uca test-uca-ablation test-smoke test-experiment test-quick run-hf-single run-hf-comprehensive run-hf-multi run-hf-tests analyze-hf-results run-hf-pipeline run-dashboard install-hf-deps run-eval-single run-eval-comprehensive run-eval-ablation run-eval-robustness run-eval-calibration run-ci-gate run-eval-pipeline run-replay watch-growth watch-growth-tail watch-csv watch-micro demo-enhanced rotate-log setup-pipe run-eval-with-monitor test debug release help

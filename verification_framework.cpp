@@ -22,6 +22,7 @@
 
 // Include Melvin headers
 #include "melvin.h"
+#include "src/utils/MetricsLogger.h"
 
 struct TestResult {
     std::string run_id;
@@ -299,6 +300,25 @@ public:
         
         // Estimate fanout
         result.fanout = std::min(16, static_cast<int>(melvin_edge_count(melvin) / melvin_node_count(melvin)));
+        
+        // Log metrics to live monitoring if enabled
+        if (Melvin::Utils::g_metrics_logger && Melvin::Utils::g_metrics_logger->isReady()) {
+            static uint64_t step_counter = 0;
+            Melvin::Utils::g_metrics_logger->logMelvinMetrics(
+                ++step_counter,
+                melvin_node_count(melvin),
+                melvin_edge_count(melvin),
+                melvin_path_count(melvin),  // Assuming this function exists
+                result.attention_entropy,
+                result.output_diversity,
+                result.top2_margin,
+                result.health_score,
+                result.latency_ms,
+                result.fanout,
+                mode,  // e.g., "classic", "hybrid"
+                "verification"  // dataset name
+            );
+        }
         
         return result;
     }
@@ -687,6 +707,13 @@ public:
 int main() {
     std::cout << "🧠 MELVIN LLM-STYLE VERIFICATION FRAMEWORK\n";
     std::cout << "==========================================\n\n";
+    
+    // Initialize metrics logger if DUMP_METRICS environment variable is set
+    const char* metrics_path = std::getenv("DUMP_METRICS");
+    if (metrics_path) {
+        Melvin::Utils::initMetricsLogger(metrics_path);
+        std::cout << "📊 Metrics logging enabled: " << metrics_path << "\n\n";
+    }
     
     MelvinVerificationFramework framework;
     framework.run_full_verification_suite();
