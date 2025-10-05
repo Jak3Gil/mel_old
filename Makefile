@@ -155,6 +155,14 @@ $(LLM_UPGRADE_TEST): llm_upgrade_test.cpp $(LIBRARY)
 $(LLM_UPGRADE_SUMMARY): llm_upgrade_summary.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+# Build the verification framework
+verification_framework: verification_framework.cpp $(LIBRARY)
+	$(CXX) $(CXXFLAGS) -o $@ $< -L. -lmelvin $(INCLUDES)
+
+# Build the LLM smoke test
+llm_smoke_test: llm_smoke_test.cpp $(LIBRARY)
+	$(CXX) $(CXXFLAGS) -o $@ $< -L. -lmelvin $(INCLUDES)
+
 # Build the Melvin proof-of-concept
 $(MELVIN_PROOF): melvin_proof.cpp
 	$(CXX) -std=c++17 -O2 -o $@ $<
@@ -269,9 +277,13 @@ run-comprehensive-test: $(COMPREHENSIVE_TEST)
 run-llm-upgrade-test: $(LLM_UPGRADE_TEST)
 	./$(LLM_UPGRADE_TEST)
 
-# Run the LLM upgrade summary
-run-llm-upgrade-summary: $(LLM_UPGRADE_SUMMARY)
-	./$(LLM_UPGRADE_SUMMARY)
+# Run the verification framework
+run-verification: verification_framework
+	./verification_framework
+
+# Run the LLM smoke test
+run-llm-smoke: llm_smoke_test
+	./llm_smoke_test
 
 # Run the Melvin scheduler
 run-melvin: $(MELVIN_SCHEDULER)
@@ -354,6 +366,8 @@ help:
 	@echo "  run-abstraction-test - Build and run the abstraction test"
 	@echo "  run-comprehensive-test - Build and run the comprehensive system test"
 	@echo "  run-llm-upgrade-test - Build and run the LLM-style upgrade test"
+	@echo "  run-verification     - Run the verification framework"
+	@echo "  run-llm-smoke       - Run the LLM smoke test"
 	@echo "  run-inject      - Build and run the data injector"
 	@echo "  run-melvin      - Build and run the Melvin UCA scheduler"
 	@echo "  run-melvin-config - Run Melvin with custom config directories"
@@ -369,4 +383,4 @@ help:
 	@echo "  release        - Build with optimizations"
 	@echo "  help           - Show this help message"
 
-.PHONY: all clean distclean install run-meta-demo run-simple-meta-demo run-minimal-meta-demo run-integrated-meta-demo run-simple-integrated-demo run-constant-memory-demo run-biochem-test run-neural-test run-advanced-neural-test run-proof-test run-graph-proof-test run-simple-proof-test run-neural-graph-test run-melvin-proof run-abstraction-test run-comprehensive-test run-inject run-melvin run-melvin-config test-uca test-uca-ablation test-smoke test-experiment test-quick test debug release help
+.PHONY: all clean distclean install run-meta-demo run-simple-meta-demo run-minimal-meta-demo run-integrated-meta-demo run-simple-integrated-demo run-constant-memory-demo run-biochem-test run-neural-test run-advanced-neural-test run-proof-test run-graph-proof-test run-simple-proof-test run-neural-graph-test run-melvin-proof run-abstraction-test run-comprehensive-test run-llm-upgrade-test run-verification run-llm-smoke run-inject run-melvin run-melvin-config test-uca test-uca-ablation test-smoke test-experiment test-quick test debug release help
