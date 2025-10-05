@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-10-05T16:31:36.903163",
+  "total_runs": 50,
+  "average_health_score": 81.6,
+  "best_health_score": 100.0,
+  "worst_health_score": 40.0,
+  "guardrail_violations": 33,
+  "guardrails": {
+    "attn_entropy_min": 0.08,
+    "attn_entropy_max": 0.35,
+    "diversity_min": 0.45,
+    "diversity_max": 0.85,
+    "top2_margin_min": 0.2,
+    "max_fanout": 16,
+    "latency_p95_max_ms": 50,
+    "embedding_coherence_min": 0.55
+  },
+  "summary_stats": {
+    "avg_attention_entropy": 0.1993956601428528,
+    "avg_output_diversity": 0.6053899664010437,
+    "avg_accuracy": 0.8467634195094491,
+    "avg_latency_ms": 25.0392601389272,
+    "avg_fanout": 12.08
+  },
+  "profile_comparison": {
+    "classic": {
+      "('health_score', 'mean')": 78.91304347826087,
+      "('health_score', 'std')": 17.83488166354263,
+      "('accuracy', 'mean')": 0.8303942822034173,
+      "('attention_entropy', 'mean')": 0.19535392814131053,
+      "('output_diversity', 'mean')": 0.5977987357561141,
+      "('latency_ms', 'mean')": 32.6572666608429
+    },
+    "hybrid": {
+      "('health_score', 'mean')": 83.88888888888889,
+      "('health_score', 'std')": 14.697810756219477,
+      "('accuracy', 'mean')": 0.8607074994368096,
+      "('attention_entropy', 'mean')": 0.20283861703305547,
+      "('output_diversity', 'mean')": 0.6118565702837614,
+      "('latency_ms', 'mean')": 18.549847175813834
+    }
+  }
+}

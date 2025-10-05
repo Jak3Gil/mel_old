@@ -134,8 +134,16 @@ echo "🔍 To run comprehensive verification:"
 echo "   make run-verification"
 
 echo ""
-echo "🔍 To run tuning tests:"
-echo "   ./run_verification.sh"
+echo "🔍 To run profile-based verification:"
+echo "   make run-verification-profile profile=Conservative seed=42"
+
+echo ""
+echo "🔍 To run automated tuning sweep:"
+echo "   ./tuning_sweep.sh"
+
+echo ""
+echo "🔍 To generate analytics and plots:"
+echo "   python3 analysis/verify_results.py --plot-all"
 
 echo ""
 echo "📊 METRIC GUARDRAILS TO MONITOR"

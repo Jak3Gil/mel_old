@@ -281,6 +281,18 @@ run-llm-upgrade-test: $(LLM_UPGRADE_TEST)
 run-verification: verification_framework
 	./verification_framework
 
+# Run verification with profile and seed parameters
+run-verification-profile: verification_framework
+	@if [ -z "$(profile)" ]; then \
+		echo "Usage: make run-verification-profile profile=Conservative seed=42"; \
+		exit 1; \
+	fi
+	@if [ -z "$(seed)" ]; then \
+		echo "Usage: make run-verification-profile profile=Conservative seed=42"; \
+		exit 1; \
+	fi
+	PROFILE=$(profile) SEED=$(seed) ./verification_framework
+
 # Run the LLM smoke test
 run-llm-smoke: llm_smoke_test
 	./llm_smoke_test
