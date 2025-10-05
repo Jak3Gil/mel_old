@@ -183,7 +183,18 @@ public:
         std::copy(edge.src, edge.src + 32, src_id.begin());
         std::copy(edge.dst, edge.dst + 32, dst_id.begin());
         
-        EdgeID id = {};  // Simplified for now
+        // Create deterministic edge ID from source, relation, and destination
+        EdgeID id = {};
+        std::hash<std::string> hasher;
+        
+        // Combine source, relation, and destination into a hash
+        std::string combined;
+        combined.append(reinterpret_cast<const char*>(src_id.data()), 32);
+        combined.append(reinterpret_cast<const char*>(&edge.rel), sizeof(edge.rel));
+        combined.append(reinterpret_cast<const char*>(dst_id.data()), 32);
+        
+        size_t hash_value = hasher(combined);
+        std::memcpy(id.data(), &hash_value, std::min(sizeof(hash_value), id.size()));
         
         // Store the edge
         edges_[id] = edge;
@@ -435,10 +446,6 @@ private:
         return store_dir_ + "/paths.melvin";
     }
     
-    std::string get_memory_file() const {
-        return store_dir_ + "/memory.txt";
-    }
-    
     void ensure_store_dir() {
         if (!store_dir_.empty()) {
             std::filesystem::create_directories(store_dir_);
@@ -492,7 +499,18 @@ public:
         std::copy(edge.src, edge.src + 32, src.begin());
         std::copy(edge.dst, edge.dst + 32, dst.begin());
         
-        EdgeID id = {};  // Simplified for nowsrc, static_cast<Rel>(edge.rel), dst, edge.layer);
+        // Create deterministic edge ID from source, relation, and destination
+        EdgeID id = {};
+        std::hash<std::string> hasher;
+        
+        // Combine source, relation, and destination into a hash
+        std::string combined;
+        combined.append(reinterpret_cast<const char*>(src.data()), 32);
+        combined.append(reinterpret_cast<const char*>(&edge.rel), sizeof(edge.rel));
+        combined.append(reinterpret_cast<const char*>(dst.data()), 32);
+        
+        size_t hash_value = hasher(combined);
+        std::memcpy(id.data(), &hash_value, std::min(sizeof(hash_value), id.size()));
         
         edges_[id] = edge;
         edge_count_++;
@@ -720,10 +738,7 @@ public:
         
         ensure_store_dir();
         
-        // Save memory as human-readable text
-        save_memory_text();
-        
-        // Save binary data
+        // Save binary data only
         save_nodes_binary();
         save_edges_binary();
         save_paths_binary();
@@ -732,124 +747,16 @@ public:
     void load_from_disk() {
         if (store_dir_.empty()) return;
         
-        // Load memory text first
-        load_memory_text();
-        
-        // Load binary data
+        // Load binary data only
         load_nodes_binary();
         load_edges_binary();
         load_paths_binary();
     }
     
 private:
-    void save_memory_text() {
-        std::ofstream file(get_memory_file());
-        if (!file.is_open()) return;
-        
-        file << "# Melvin Persistent Memory\n";
-        file << "# Generated: " << get_timestamp() << "\n";
-        file << "# Nodes: " << node_count_ << "\n";
-        file << "# Edges: " << edge_count_ << "\n";
-        file << "# Paths: " << path_count_ << "\n\n";
-        
-        // Save nodes as text
-        for (const auto& [id, node_data] : nodes_) {
-            const auto& [header, payload] = node_data;
-            std::string content(payload.begin(), payload.end());
-            
-            file << "NODE " << node_id_to_string(id) << " ";
-            file << "TYPE:" << header.type << " ";
-            file << "FLAGS:" << header.flags << " ";
-            file << "CREATED:" << header.ts_created << " ";
-            file << "UPDATED:" << header.ts_updated << " ";
-            file << "CONTENT:\"" << content << "\"\n";
-        }
-        
-        // Save edges as text
-        for (const auto& [id, edge] : edges_) {
-            NodeID src, dst;
-            std::copy(edge.src, edge.src + 32, src.begin());
-            std::copy(edge.dst, edge.dst + 32, dst.begin());
-            
-            file << "EDGE " << edge_id_to_string(id) << " ";
-            file << "SRC:" << node_id_to_string(src) << " ";
-            file << "REL:" << edge.rel << " ";
-            file << "DST:" << node_id_to_string(dst) << " ";
-            file << "W:" << edge.w << " ";
-            file << "W_CORE:" << edge.w_core << " ";
-            file << "W_CTX:" << edge.w_ctx << " ";
-            file << "COUNT:" << edge.count << "\n";
-        }
-    }
     
-    void load_memory_text() {
-        std::ifstream file(get_memory_file());
-        if (!file.is_open()) return;
-        
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty() || line[0] == '#') continue;
-            
-            std::istringstream iss(line);
-            std::string type;
-            iss >> type;
-            
-            if (type == "NODE") {
-                load_node_from_text(iss);
-            } else if (type == "EDGE") {
-                load_edge_from_text(iss);
-            }
-        }
-    }
     
-    void load_node_from_text(std::istringstream& iss) {
-        std::string id_str, type_str, flags_str, created_str, updated_str, content_str;
-        iss >> id_str >> type_str >> flags_str >> created_str >> updated_str >> content_str;
-        
-        // Parse content (remove quotes)
-        if (content_str.length() > 2 && content_str[0] == '"' && content_str.back() == '"') {
-            content_str = content_str.substr(1, content_str.length() - 2);
-        }
-        
-        NodeID id = string_to_node_id(id_str);
-        NodeRecHeader header;
-        header.type = std::stoul(type_str.substr(4)); // Remove "TYPE:"
-        header.flags = std::stoul(flags_str.substr(6)); // Remove "FLAGS:"
-        header.ts_created = std::stoull(created_str.substr(8)); // Remove "CREATED:"
-        header.ts_updated = std::stoull(updated_str.substr(8)); // Remove "UPDATED:"
-        header.payload_len = static_cast<uint32_t>(content_str.length());
-        
-        std::vector<uint8_t> payload(content_str.begin(), content_str.end());
-        nodes_[id] = {header, payload};
-        node_count_++;
-    }
     
-    void load_edge_from_text(std::istringstream& iss) {
-        std::string id_str, src_str, rel_str, dst_str, w_str, w_core_str, w_ctx_str, count_str;
-        iss >> id_str >> src_str >> rel_str >> dst_str >> w_str >> w_core_str >> w_ctx_str >> count_str;
-        
-        EdgeID id = string_to_edge_id(id_str);
-        EdgeRec edge;
-        
-        // Parse source and destination
-        NodeID src = string_to_node_id(src_str.substr(4)); // Remove "SRC:"
-        NodeID dst = string_to_node_id(dst_str.substr(4)); // Remove "DST:"
-        std::copy(src.begin(), src.end(), edge.src);
-        std::copy(dst.begin(), dst.end(), edge.dst);
-        
-        edge.rel = std::stoul(rel_str.substr(4)); // Remove "REL:"
-        edge.w = std::stof(w_str.substr(2)); // Remove "W:"
-        edge.w_core = std::stof(w_core_str.substr(7)); // Remove "W_CORE:"
-        edge.w_ctx = std::stof(w_ctx_str.substr(6)); // Remove "W_CTX:"
-        edge.count = std::stoul(count_str.substr(6)); // Remove "COUNT:"
-        
-        edges_[id] = edge;
-        edge_count_++;
-        
-        // Update adjacency indices
-        out_edges_[src].push_back(id);
-        in_edges_[dst].push_back(id);
-    }
     
     void save_nodes_binary() {
         std::ofstream file(get_nodes_file(), std::ios::binary);
@@ -1007,5 +914,108 @@ std::unique_ptr<Store> open_store(const std::string& dir) {
 std::unique_ptr<VM> create_vm(Store* store, uint64_t seed) {
     return std::make_unique<MelvinVM>(store, seed);
 }
+
+// Simple interface for loading, creating, and adding to storage
+class SimpleStorage {
+private:
+    std::unique_ptr<Store> store_;
+    std::string store_dir_;
+    
+public:
+    SimpleStorage(const std::string& dir) : store_dir_(dir) {
+        store_ = open_store(dir);
+        if (!store_) {
+            throw std::runtime_error("Failed to create store");
+        }
+    }
+    
+    ~SimpleStorage() {
+        // Store will auto-save on destruction
+    }
+    
+    void add_knowledge(const std::string& text) {
+        if (text.empty()) return;
+        
+        // Create a simple node for the text
+        NodeRecHeader header;
+        header.type = static_cast<uint32_t>(NodeType::SYMBOL);
+        header.flags = 0;
+        header.payload_len = static_cast<uint32_t>(text.size());
+        header.ts_created = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        header.ts_updated = header.ts_created;
+        
+        std::vector<uint8_t> payload(text.begin(), text.end());
+        store_->upsert_node(header, payload);
+    }
+    
+    void add_knowledge_from_file(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Could not open file: " << filename << std::endl;
+            return;
+        }
+        
+        std::string line;
+        while (std::getline(file, line)) {
+            if (!line.empty() && line[0] != '#') { // Skip empty lines and comments
+                add_knowledge(line);
+            }
+        }
+        file.close();
+    }
+    
+    void show_stats() {
+        std::cout << "Storage Statistics:" << std::endl;
+        std::cout << "  Nodes: " << store_->node_count() << std::endl;
+        std::cout << "  Edges: " << store_->edge_count() << std::endl;
+        std::cout << "  Paths: " << store_->path_count() << std::endl;
+        std::cout << "  Store: " << store_dir_ << std::endl;
+    }
+    
+    Store* get_store() { return store_.get(); }
+};
+
+// C interface for simple storage operations
+extern "C" {
+    typedef struct simple_storage_t simple_storage_t;
+    
+    simple_storage_t* simple_storage_create(const char* dir) {
+        try {
+            return reinterpret_cast<simple_storage_t*>(new SimpleStorage(dir));
+        } catch (...) {
+            return nullptr;
+        }
+    }
+    
+    void simple_storage_destroy(simple_storage_t* storage) {
+        if (storage) {
+            delete reinterpret_cast<SimpleStorage*>(storage);
+        }
+    }
+    
+    void simple_storage_add_knowledge(simple_storage_t* storage, const char* text) {
+        if (storage && text) {
+            reinterpret_cast<SimpleStorage*>(storage)->add_knowledge(text);
+        }
+    }
+    
+    void simple_storage_add_file(simple_storage_t* storage, const char* filename) {
+        if (storage && filename) {
+            reinterpret_cast<SimpleStorage*>(storage)->add_knowledge_from_file(filename);
+        }
+    }
+    
+    void simple_storage_show_stats(simple_storage_t* storage) {
+        if (storage) {
+            reinterpret_cast<SimpleStorage*>(storage)->show_stats();
+        }
+    }
+    
+    int simple_storage_is_loaded(simple_storage_t* storage) {
+        return (storage) ? 1 : 0;
+    }
+}
+
 
 } // namespace melvin

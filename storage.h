@@ -2,6 +2,7 @@
 
 #include "melvin_types.h"
 #include <cstdint>
+#include <cstddef>
 #include <vector>
 #include <string>
 #include <memory>
@@ -19,6 +20,11 @@ struct NodeRecHeader {
     uint64_t ts_updated;  // ns
     uint32_t payload_len; // N
     uint32_t degree_hint; // optional fast degree (may be 0)
+    
+    // Anchor system fields
+    uint64_t pin_expiry;  // ns since epoch (0 = not pinned)
+    uint32_t confirm_count; // confirmation count for canon promotion
+    uint32_t anchor_pad;  // alignment padding
     // followed by: uint8_t payload[N], provenance varints, uint32_t checksum
 };
 #pragma pack(pop)

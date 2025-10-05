@@ -1,0 +1,20 @@
+Machine learning is a subset of artificial intelligence.
+Deep learning uses neural networks with multiple layers.
+Natural language processing helps computers understand human language.
+Supervised learning uses labeled training data.
+Unsupervised learning finds patterns in unlabeled data.
+Reinforcement learning learns through trial and error.
+Neural networks are inspired by the human brain.
+Convolutional neural networks excel at image recognition.
+Recurrent neural networks process sequential data.
+Support vector machines are used for classification.
+Decision trees make decisions through branching rules.
+Random forests combine multiple decision trees.
+Gradient boosting improves model accuracy iteratively.
+Cross-validation tests model performance on unseen data.
+Overfitting occurs when models memorize training data too closely.
+Regularization prevents overfitting by adding constraints.
+Feature engineering creates useful input variables.
+Dimensionality reduction reduces the number of input features.
+Clustering groups similar data points together.
+Association rules find patterns between different items.

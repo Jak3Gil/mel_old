@@ -227,7 +227,7 @@ std::vector<Path> VMContext::beam_search(const NodeID& start, const RelMask& mas
     initial_path.is_durable = false;
     beam.push_back(initial_path);
     
-    std::cout << "🔍 Beam search starting from node, depth=" << depth << ", beam_size=" << beam_size << "\n";
+    // Beam search starting
     
     for (size_t d = 0; d < depth; ++d) {
         std::vector<Path> next_beam;
@@ -243,12 +243,12 @@ std::vector<Path> VMContext::beam_search(const NodeID& start, const RelMask& mas
                 }
             }
             
-            std::cout << "  🔍 Expanding from depth " << d << ", path has " << path.edges.size() << " edges\n";
+            // Expanding from depth
             
             // Expand with outgoing edges
             AdjView view;
             if (store_->get_out_edges(current_node, mask, view) && view.edges != nullptr) {
-                std::cout << "    📡 Found " << view.count << " outgoing edges\n";
+                // Found outgoing edges
                 
                 for (size_t i = 0; i < view.count; ++i) {
                     Path new_path = path;
@@ -267,23 +267,19 @@ std::vector<Path> VMContext::beam_search(const NodeID& start, const RelMask& mas
                     // Debug: show relation type
                     std::string rel_name = "UNKNOWN";
                     switch (static_cast<Rel>(view.edges[i].rel)) {
-                        case Rel::ISA: rel_name = "ISA"; break;
-                        case Rel::SIMILAR_TO: rel_name = "SIMILAR_TO"; break;
-                        case Rel::HAS_PROPERTY: rel_name = "HAS_PROPERTY"; break;
-                        case Rel::PART_OF: rel_name = "PART_OF"; break;
-                        case Rel::LOCATED_IN: rel_name = "LOCATED_IN"; break;
-                        case Rel::CAUSES: rel_name = "CAUSES"; break;
-                        case Rel::EFFECT: rel_name = "EFFECT"; break;
+                        case Rel::EXACT: rel_name = "EXACT"; break;
+                        case Rel::TEMPORAL: rel_name = "TEMPORAL"; break;
+                        case Rel::LEAP: rel_name = "LEAP"; break;
+                        case Rel::GENERALIZATION: rel_name = "GENERALIZATION"; break;
                         default: rel_name = "OTHER"; break;
                     }
                     
-                    std::cout << "      ➡️  New path: " << new_path.edges.size() << " edges, rel=" << rel_name 
-                              << ", score=" << new_path.score << ", confidence=" << new_path.confidence << "\n";
+                    // Path found - no debug output needed
                     
                     next_beam.push_back(new_path);
                 }
             } else {
-                std::cout << "    ❌ No outgoing edges found\n";
+                // No outgoing edges found
             }
         }
         
@@ -297,16 +293,16 @@ std::vector<Path> VMContext::beam_search(const NodeID& start, const RelMask& mas
         
         beam = next_beam;
         
-        std::cout << "  📊 Depth " << d << " complete: " << beam.size() << " paths in beam\n";
+        // Depth complete
         
         // Early exit if we have a durable path
         if (!beam.empty() && beam[0].is_durable && d >= 1) {
-            std::cout << "  ✅ Found durable path, stopping early\n";
+            // Found durable path, stopping early
             break;
         }
     }
     
-    std::cout << "🎯 Beam search complete: " << beam.size() << " final paths\n";
+    // Beam search complete
     return beam;
 }
 
@@ -462,8 +458,7 @@ EdgeID VMContext::create_inferred_edge(const NodeID& src, const NodeID& dst, Rel
     
     EdgeID edge_id = store_->upsert_edge(edge);
     
-    std::cout << "🔗 Created inferred edge: " << static_cast<int>(relation) 
-              << " (confidence=" << confidence << ")\n";
+    // Created inferred edge
     
     return edge_id;
 }
@@ -501,8 +496,8 @@ std::vector<EdgeID> VMContext::infer_missing_connections(const Path& path, float
         }
         
         // Also try to infer reverse relationship if it makes sense
-        if (inferred_relation == Rel::ISA || inferred_relation == Rel::PART_OF) {
-            Rel reverse_relation = (inferred_relation == Rel::ISA) ? Rel::HAS_PROPERTY : Rel::PART_OF;
+        if (inferred_relation == Rel::TEMPORAL) {
+            Rel reverse_relation = Rel::TEMPORAL;
             EdgeID reverse_edge = create_inferred_edge(end_node, start_node, reverse_relation, inference_confidence * 0.8f);
             if (!is_zero_id(reverse_edge)) {
                 created_edges.push_back(reverse_edge);
@@ -553,8 +548,9 @@ bool VMContext::generate_text_output(const NodeID& node, ByteBuf& out) {
         // Generate concept description
         AdjView view;
         RelMask mask;
-        mask.set(Rel::ISA);
-        mask.set(Rel::HAS_PROPERTY);
+        mask.set(Rel::EXACT);
+        mask.set(Rel::TEMPORAL);
+        mask.set(Rel::GENERALIZATION);
         
         if (store_->get_out_edges(node, mask, view)) {
             text = "Concept with " + std::to_string(view.count) + " properties";
@@ -640,7 +636,7 @@ void MelvinVM::exec(const uint8_t* bytecode, size_t len) {
                 // Create edge
                 EdgeRec edge;
                 std::copy(src.begin(), src.end(), edge.src);
-                edge.rel = static_cast<uint32_t>(Rel::NEXT); // Default relation
+                edge.rel = static_cast<uint32_t>(Rel::TEMPORAL); // Default temporal relation
                 std::copy(dst.begin(), dst.end(), edge.dst);
                 
                 // Apply size-relative scaling to initial weights
