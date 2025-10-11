@@ -77,6 +77,46 @@ struct FileHeader {
 };
 #pragma pack(pop)
 
+// Brain snapshot structures for in-memory learning
+#pragma pack(push, 1)
+struct BrainSnapshotHeader {
+    char magic[4];           // "MLVN"
+    uint32_t version;        // snapshot format version
+    uint32_t num_nodes;      // number of nodes
+    uint32_t num_edges;      // number of edges
+    uint32_t string_table_size; // size of string table in bytes
+    uint64_t timestamp;      // snapshot creation time
+    uint32_t checksum;       // CRC32 checksum
+};
+
+struct CompactNode {
+    uint64_t id;             // node ID
+    uint32_t string_id;      // index into string table
+    float roles[3];          // nounness, verbness, adjness
+    uint16_t flags;          // node flags
+    uint16_t embed_dim;      // embedding dimension (0 if no embedding)
+    // embedding follows if embed_dim > 0
+};
+
+struct CompactEdge {
+    uint64_t from_id;        // source node ID
+    uint64_t to_id;          // destination node ID
+    uint16_t rel_type;       // relation type
+    float weight;            // edge weight
+    uint32_t count;          // usage count
+    uint32_t last_ts;        // last access timestamp
+};
+#pragma pack(pop)
+
+// Growth tracking for learning visibility
+struct GrowthStats {
+    uint32_t nodes_added = 0;
+    uint32_t edges_added = 0;
+    uint32_t edges_updated = 0;
+    uint32_t leaps_promoted = 0;
+    std::vector<std::string> new_node_labels;
+};
+
 // Adjacency view for cache-friendly traversal
 struct AdjView {
     const EdgeRec* edges;
@@ -248,5 +288,26 @@ uint16_t swap_endian(uint16_t value);
 // File I/O utilities
 bool write_file_header(const std::string& path, const FileHeader& header);
 bool read_file_header(const std::string& path, FileHeader& header);
+
+} // namespace melvin
+
+// Forward declaration for Node/Edge (global scope, consistent with other modules)
+struct Node;
+struct Edge;
+
+namespace melvin {
+
+// Brain snapshot functions for in-memory learning
+bool save_brain_snapshot(
+    const char* filepath,
+    const std::unordered_map<uint64_t, ::Node>& nodes,
+    const std::vector<::Edge>& edges
+);
+
+bool load_brain_snapshot(
+    const char* filepath,
+    std::unordered_map<uint64_t, ::Node>& nodes,
+    std::vector<::Edge>& edges
+);
 
 } // namespace melvin

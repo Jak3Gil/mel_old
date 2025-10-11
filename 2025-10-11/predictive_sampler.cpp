@@ -2,6 +2,7 @@
 #include "melvin_leap_nodes.h"
 #include "src/embeddings/embedding_bridge.h"
 #include "melvin_types.h"
+#include "learning_hooks.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -9,6 +10,43 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+
+// Structures from melvin.cpp (kept in sync)
+struct Node {
+    uint64_t id = 0;
+    std::string text;
+    uint32_t type = 0;
+    int freq = 0;
+    bool pinned = false;
+    std::vector<float> emb;
+    std::vector<float> embedding;
+    float attention_weight = 0.0f;
+    uint64_t last_accessed = 0;
+    float semantic_strength = 1.0f;
+    float activation = 0.0f;
+};
+
+struct Edge {
+    uint64_t u, v;
+    uint64_t locB;
+    float weight;
+    float w_core;
+    float w_ctx;
+    uint32_t count;
+    uint8_t rel;
+    float last_used;
+    float freq_ratio = 0.0f;
+    
+    Edge() : u(0), v(0), locB(0), weight(0.5f), w_core(0.3f), w_ctx(0.2f), count(1), rel(0), last_used(0.0f), freq_ratio(0.0f) {}
+    
+    void update_frequency(uint64_t total_nodes) { (void)total_nodes; } // Stub
+};
+
+// External globals from diagnostic_main.cpp
+extern std::unordered_map<uint64_t, Node> G_nodes;
+extern std::vector<Edge> G_edges;
+extern std::unordered_map<uint64_t, std::vector<size_t>> G_adj;
+extern uint64_t G_total_nodes;
 
 namespace melvin {
 
@@ -455,18 +493,67 @@ std::vector<uint64_t> top_p_sample(
     return path;
 }
 
-// Main generation function
+// Print growth ledger for learning visibility
+void print_growth_ledger(const melvin::GrowthStats& growth) {
+    if (growth.nodes_added > 0) {
+        std::cout << "[GROWTH] +nodes: " << growth.nodes_added;
+        if (!growth.new_node_labels.empty()) {
+            std::cout << " (";
+            for (size_t i = 0; i < std::min(3UL, growth.new_node_labels.size()); i++) {
+                if (i > 0) std::cout << ", ";
+                std::cout << growth.new_node_labels[i];
+            }
+            std::cout << ")";
+        }
+        std::cout << std::endl;
+    }
+    if (growth.edges_added > 0) {
+        std::cout << "[GROWTH] +edges: " << growth.edges_added << std::endl;
+    }
+    if (growth.edges_updated > 0 && growth.edges_added == 0) {
+        std::cout << "[GROWTH] ~edges: " << growth.edges_updated << " updated" << std::endl;
+    }
+    if (growth.leaps_promoted > 0) {
+        std::cout << "[GROWTH] promoted leaps: " << growth.leaps_promoted << std::endl;
+    }
+}
+
+// Main generation function with learning integration
 std::vector<uint64_t> generate_path(
     const std::vector<uint64_t>& seed_context,
     PredictiveConfig& cfg,
     LeapController* leap_controller,
     embeddings::EmbeddingBridge* embedding_bridge) {  // Note: cfg is now non-const for adaptive tuning
     
+    // Generate path using beam search or top-p sampling
+    std::vector<uint64_t> path;
     if (cfg.use_beam) {
-        return beam_search(seed_context, cfg, leap_controller, embedding_bridge);
+        path = beam_search(seed_context, cfg, leap_controller, embedding_bridge);
     } else {
-        return top_p_sample(seed_context, cfg, leap_controller, embedding_bridge);
+        path = top_p_sample(seed_context, cfg, leap_controller, embedding_bridge);
     }
+    
+    // Apply learning updates if path is valid
+    if (!path.empty() && path.size() > 1) {
+        // Simple entropy/similarity estimation (placeholder values for now)
+        float entropy_before = 0.7f;  // Would compute from candidates
+        float entropy_after = 0.5f;   // Would compute after selection
+        float similarity = 0.3f;       // Would get from embedding bridge
+        
+        // Apply learning and track growth
+        auto growth = melvin::learning::apply_learning_updates(
+            path, entropy_before, entropy_after, similarity,
+            G_nodes, G_edges, leap_controller
+        );
+        
+        // Print growth ledger for immediate visibility
+        if (growth.nodes_added > 0 || growth.edges_added > 0 || 
+            growth.edges_updated > 0 || growth.leaps_promoted > 0) {
+            print_growth_ledger(growth);
+        }
+    }
+    
+    return path;
 }
 
 // Online learning: update frequencies after generation
@@ -531,18 +618,7 @@ void log_sampler_step(
     std::cout << "\n";
 }
 
-// Compute entropy of candidate distribution
-float compute_entropy(const std::vector<Candidate>& candidates) {
-    if (candidates.empty()) return 0.0f;
-    
-    float entropy = 0.0f;
-    for (const auto& c : candidates) {
-        if (c.score > 0.0f) {
-            entropy -= c.score * std::log2(c.score);
-        }
-    }
-    return entropy;
-}
+// Note: compute_entropy is defined in melvin_leap_nodes.cpp to avoid duplicate symbols
 
 // Adaptive tuning: adjust config based on entropy and success
 void adaptive_tune_config(PredictiveConfig& cfg, 
@@ -606,7 +682,7 @@ void save_thought_node(const std::vector<uint64_t>& path) {
     
     // Add as a new node (simplified - in practice you'd use proper node creation)
     uint64_t thought_id = G_total_nodes++;
-    G_nodes[thought_id] = melvin::Node();
+    G_nodes[thought_id] = Node();
     G_nodes[thought_id].id = thought_id;
     G_nodes[thought_id].text = thought_text;
     G_nodes[thought_id].type = 1110; // Thought node type
@@ -618,7 +694,7 @@ void save_thought_node(const std::vector<uint64_t>& path) {
         size_t edge_idx = G_edges.size();
         G_edges.emplace_back();
         auto& edge = G_edges.back();
-        edge.locA = path_node;
+        edge.u = path_node;
         edge.locB = thought_id;
         edge.rel = static_cast<uint8_t>(Rel::LEAP); // Use LEAP relation for Thought connections
         edge.freq_ratio = 0.1f; // Initial frequency

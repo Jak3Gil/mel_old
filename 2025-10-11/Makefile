@@ -55,8 +55,9 @@ INTERACTIVE = melvin_interactive
 DEMO_PREDICTIVE = demo_predictive
 DEMO_LEAP_SYSTEM = demo_leap_system
 DEMO_EMBEDDING_BRIDGE = demo_embedding_bridge
+DIAGNOSTIC_MAIN = diagnostic_main
 
-.PHONY: all clean library scheduler demo evolution_test evolution_demo training_demo continuous_learning stress_test scale_demo multimodal_demo learn_test_evolve ollama_continuous ollama_integrated demo_guardrails dump_graph test_enhanced_leap fuzz_templates telemetry_rollup demo_cross_modal ingest_tinychat transfer_storage interactive demo_predictive demo_leap_system
+.PHONY: all clean library scheduler demo evolution_test evolution_demo training_demo continuous_learning stress_test scale_demo multimodal_demo learn_test_evolve ollama_continuous ollama_integrated demo_guardrails dump_graph test_enhanced_leap fuzz_templates telemetry_rollup demo_cross_modal ingest_tinychat transfer_storage interactive demo_predictive demo_leap_system diagnostic
 
 all: library scheduler demo evolution_test evolution_demo training_demo continuous_learning stress_test scale_demo multimodal_demo learn_test_evolve ollama_continuous ollama_integrated test_enhanced_leap dump_graph demo_guardrails fuzz_templates telemetry_rollup demo_cross_modal
 
@@ -179,16 +180,19 @@ demo_predictive: $(DEMO_PREDICTIVE)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDES)
 
 clean:
-	rm -f $(OBJECTS) $(SCALE_DEMO_OBJECTS) $(LIBRARY) $(MELVIN_SCHEDULER) $(THINKING_DEMO) $(EVOLUTION_TEST) $(EVOLUTION_DEMO) $(TRAINING_DEMO) $(CONTINUOUS_LEARNING) $(STRESS_TEST) $(SCALE_DEMO) $(MULTIMODAL_DEMO) $(LEARN_TEST_EVOLVE) $(OLLAMA_CONTINUOUS) $(OLLAMA_INTEGRATED) $(DEMO_GUARDRAILS) $(DUMP_GRAPH) $(TEST_ENHANCED_LEAP) $(FUZZ_TEMPLATES) $(TELEMETRY_ROLLUP) $(DEMO_CROSS_MODAL) melvin_stress_test_metrics.csv melvin_evolution_log.csv melvin_ollama_metrics.csv melvin_ollama_continuous.bin melvin_ollama_processed_files.txt melvin_integrated_metrics.csv melvin_integrated_processed.txt
+	rm -f $(OBJECTS) $(SCALE_DEMO_OBJECTS) $(LIBRARY) $(MELVIN_SCHEDULER) $(THINKING_DEMO) $(EVOLUTION_TEST) $(EVOLUTION_DEMO) $(TRAINING_DEMO) $(CONTINUOUS_LEARNING) $(STRESS_TEST) $(SCALE_DEMO) $(MULTIMODAL_DEMO) $(LEARN_TEST_EVOLVE) $(OLLAMA_CONTINUOUS) $(OLLAMA_INTEGRATED) $(DEMO_GUARDRAILS) $(DUMP_GRAPH) $(TEST_ENHANCED_LEAP) $(FUZZ_TEMPLATES) $(TELEMETRY_ROLLUP) $(DEMO_CROSS_MODAL) $(DIAGNOSTIC_MAIN) melvin_stress_test_metrics.csv melvin_evolution_log.csv melvin_ollama_metrics.csv melvin_ollama_continuous.bin melvin_ollama_processed_files.txt melvin_integrated_metrics.csv melvin_integrated_processed.txt
 	rm -f scale_demo_*.bin scale_demo_*.csv scale_demo_*.jsonl validation_*.txt validation_*.csv multimodal_demo_memory.bin
 	rm -f test_guardrails*.bin guardrails_telemetry.jsonl melvin_telemetry.jsonl test_enhanced_leap.bin fuzz_test*.bin fuzz_telemetry.jsonl cross_modal*.bin cross_modal_telemetry.jsonl
+	rm -f leap_diagnostics.csv leap_tuning_report.md leap_tuning_results.txt
+	rm -f test_learning learning_hooks.o melvin_brain.bin
+	rm -f teach_file teach_curriculum src/teaching/*.o
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
 	cp $(LIBRARY) /usr/local/lib/
 	cp $(HEADERS) /usr/local/include/
 
-.PHONY: help run_scale_demo_A run_scale_demo_B run_scale_demo_C run_scale_demo_comprehensive test_guardrails
+.PHONY: help run_scale_demo_A run_scale_demo_B run_scale_demo_C run_scale_demo_comprehensive test_guardrails run_diagnostic run_diagnostic_auto_tune run_diagnostic_quick
 help:
 	@echo "Available targets:"
 	@echo "  all                - Build library, scheduler, demo, evolution test, evolution demo, training demo, continuous learning, scale demo, and LEAP tools"
@@ -211,6 +215,7 @@ help:
 	@echo "  fuzz_templates     - Build template fuzz/regression tester"
 	@echo "  telemetry_rollup   - Build telemetry analysis tool"
 	@echo "  demo_cross_modal   - Build cross-modal reasoning demo (image+audio+text)"
+	@echo "  diagnostic         - Build graph-guided predictive system diagnostic tool"
 	@echo "  test_guardrails    - Run guardrails test suite"
 	@echo "  clean              - Remove build artifacts"
 	@echo "  install            - Install library and headers"
@@ -221,6 +226,11 @@ help:
 	@echo "  run_scale_demo_B   - Run Phase B (50k nodes, ~15-25 min)"
 	@echo "  run_scale_demo_C   - Run Phase C (100k nodes, ~30-60 min)"
 	@echo "  run_scale_demo_comprehensive - Run all phases A→C with report"
+	@echo ""
+	@echo "Diagnostic & Tuning Runners:"
+	@echo "  run_diagnostic           - Run basic diagnostic suite (10 tests)"
+	@echo "  run_diagnostic_auto_tune - Run full auto-tuning with detailed report"
+	@echo "  run_diagnostic_quick     - Run quick diagnostic (5 tests)"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -260,3 +270,76 @@ demo_embedding_bridge: $(DEMO_EMBEDDING_BRIDGE)
 
 run_embedding_demo: demo_embedding_bridge
 	./$(DEMO_EMBEDDING_BRIDGE)
+
+# Diagnostic and auto-tuning tool
+$(DIAGNOSTIC_MAIN): diagnostic_main.cpp leap_diagnostic.cpp leap_auto_tune.cpp melvin_leap_nodes.cpp predictive_sampler.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+
+diagnostic: $(DIAGNOSTIC_MAIN)
+
+run_diagnostic: diagnostic
+	./$(DIAGNOSTIC_MAIN)
+
+run_diagnostic_auto_tune: diagnostic
+	./$(DIAGNOSTIC_MAIN) --auto-tune --full-report
+
+run_diagnostic_quick: diagnostic
+	./$(DIAGNOSTIC_MAIN) --quick
+
+# Learning system with in-memory updates and binary persistence
+LEARNING_OBJS = learning_hooks.o storage.o
+
+learning_hooks.o: learning_hooks.cpp learning_hooks.h storage.h melvin_leap_nodes.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+test_learning: test_learning.cpp $(LEARNING_OBJS) predictive_sampler.o melvin_leap_nodes.o vm.o
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+
+run_learning_test: test_learning
+	./test_learning
+
+.PHONY: test_learning run_learning_test
+
+# Teaching system with curriculum and verification
+TEACHING_OBJS = src/teaching/teaching_format.o src/teaching/teaching_ingest.o src/teaching/teaching_verify.o src/teaching/teaching_metrics.o
+
+src/teaching/teaching_format.o: src/teaching/teaching_format.cpp src/teaching/teaching_format.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+src/teaching/teaching_ingest.o: src/teaching/teaching_ingest.cpp src/teaching/teaching_ingest.h src/teaching/teaching_format.h learning_hooks.h storage.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+src/teaching/teaching_verify.o: src/teaching/teaching_verify.cpp src/teaching/teaching_verify.h src/teaching/teaching_format.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+src/teaching/teaching_metrics.o: src/teaching/teaching_metrics.cpp src/teaching/teaching_metrics.h src/teaching/teaching_format.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+teach_file: src/tools/teach_file.cpp $(TEACHING_OBJS) $(LEARNING_OBJS) vm.o
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+
+teach_curriculum: src/tools/teach_curriculum.cpp $(TEACHING_OBJS) $(LEARNING_OBJS) vm.o
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^
+
+teach: teach_file
+	@if [ -z "$(FILE)" ]; then echo "Usage: make teach FILE=lessons/00_basics.tch"; exit 1; fi
+	./teach_file --file $(FILE) --verify --snapshot
+
+teach_dir: teach_curriculum
+	@if [ -z "$(DIR)" ]; then echo "Usage: make teach_dir DIR=lessons/"; exit 1; fi
+	./teach_curriculum --dir $(DIR) --stop-on-fail
+
+teach_verify: teach_file
+	@if [ -z "$(FILE)" ]; then echo "Usage: make teach_verify FILE=lessons/00_basics.tch"; exit 1; fi
+	./teach_file --file $(FILE) --verify --no-snapshot
+
+teach_reset:
+	@echo "⚠️  Resetting Melvin's brain (deleting melvin_brain.bin)..."
+	@rm -f melvin_brain.bin
+	@echo "✅ Brain reset complete. Melvin will start fresh on next teach."
+
+teach_report:
+	@echo "📊 Teaching Session Reports:"
+	@ls -lh logs/teaching/ 2>/dev/null || echo "No logs found"
+
+.PHONY: teach_file teach_curriculum teach teach_dir teach_verify teach_reset teach_report

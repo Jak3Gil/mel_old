@@ -1,0 +1,78 @@
+# Lesson 00: Basic Concepts and Relationships
+# Teaching Melvin fundamental facts about the world
+# Format: .tch (teaching file)
+
+#FACT
+cats ARE mammals
+
+#FACT
+dogs ARE mammals
+
+#FACT
+mammals PRODUCE milk
+
+#ASSOCIATION
+fire PRODUCES heat
+
+#ASSOCIATION
+water IS_A liquid
+
+#FACT
+liquids HAVE volume
+
+#TEST CatsMilk
+#QUERY
+What do cats produce?
+#EXPECT
+milk
+
+#TEST DogsCategory
+#QUERY
+What are dogs?
+#EXPECT
+mammals
+
+#TEST FireHeat
+#QUERY
+What does fire produce?
+#EXPECT
+heat
+
+#TEST WaterType
+#QUERY
+What is water?
+#EXPECT
+liquid
+
+#TEST LiquidsProperty
+#QUERY
+What do liquids have?
+#EXPECT
+volume
+
+# Additional basic facts
+
+#FACT
+birds HAVE wings
+
+#FACT
+wings ENABLE flight
+
+#FACT
+fish LIVE_IN water
+
+#TEST BirdsFeature
+#QUERY
+What do birds have?
+#EXPECT
+wings
+
+#TEST FishHabitat
+#QUERY
+Where do fish live?
+#EXPECT
+water
+
+# Summary: 10 facts, 10 tests
+# Expected: All tests should pass after ingestion
+

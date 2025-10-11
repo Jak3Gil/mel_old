@@ -10,6 +10,32 @@
 #include <sstream>
 #include <iomanip>
 
+// Full Node and Edge definitions (global scope, synchronized with other modules)
+struct Node {
+    uint64_t id = 0;
+    std::string text;
+    uint32_t type = 0;
+    int freq = 0;
+    bool pinned = false;
+    std::vector<float> emb;
+    std::vector<float> embedding;
+    float attention_weight = 0.0f;
+    uint64_t last_accessed = 0;
+    float semantic_strength = 1.0f;
+    float activation = 0.0f;
+};
+
+struct Edge {
+    uint64_t u, v;
+    uint64_t locB;
+    float weight;
+    float w_core;
+    float w_ctx;
+    uint32_t count;
+    
+    void update_frequency(uint64_t total_nodes) { (void)total_nodes; }
+};
+
 namespace melvin {
 
 // Utility functions for endianness
@@ -1018,5 +1044,206 @@ extern "C" {
     }
 }
 
+// Brain snapshot implementation for in-memory learning
+
+// Simple CRC32 implementation
+uint32_t compute_crc32(const uint8_t* data, size_t length) {
+    uint32_t crc = 0xFFFFFFFF;
+    for (size_t i = 0; i < length; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
+        }
+    }
+    return ~crc;
+}
+
+bool save_brain_snapshot(
+    const char* filepath,
+    const std::unordered_map<uint64_t, ::Node>& nodes,
+    const std::vector<::Edge>& edges
+) {
+    std::ofstream file(filepath, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "[SNAPSHOT] Failed to open file for writing: " << filepath << std::endl;
+        return false;
+    }
+    
+    try {
+        // Build string table
+        std::vector<std::string> string_table;
+        std::unordered_map<std::string, uint32_t> string_index;
+        
+        for (const auto& [id, node] : nodes) {
+            if (string_index.find(node.text) == string_index.end()) {
+                string_index[node.text] = string_table.size();
+                string_table.push_back(node.text);
+            }
+        }
+        
+        // Calculate string table size
+        uint32_t string_table_size = 0;
+        for (const auto& str : string_table) {
+            string_table_size += 4 + str.size(); // 4 bytes length + string data
+        }
+        
+        // Write header
+        BrainSnapshotHeader header;
+        header.magic[0] = 'M';
+        header.magic[1] = 'L';
+        header.magic[2] = 'V';
+        header.magic[3] = 'N';
+        header.version = 1;
+        header.num_nodes = nodes.size();
+        header.num_edges = edges.size();
+        header.string_table_size = string_table_size;
+        header.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+        header.checksum = 0; // Will compute later
+        
+        file.write(reinterpret_cast<const char*>(&header), sizeof(header));
+        
+        // Write string table
+        for (const auto& str : string_table) {
+            uint32_t len = str.size();
+            file.write(reinterpret_cast<const char*>(&len), sizeof(len));
+            file.write(str.data(), len);
+        }
+        
+        // Write nodes
+        for (const auto& [id, node] : nodes) {
+            CompactNode cn;
+            cn.id = id;
+            cn.string_id = string_index[node.text];
+            cn.roles[0] = 0.5f; // Default role scores
+            cn.roles[1] = 0.5f;
+            cn.roles[2] = 0.5f;
+            cn.flags = 0;
+            cn.embed_dim = node.embedding.size();
+            
+            file.write(reinterpret_cast<const char*>(&cn), sizeof(cn));
+            
+            // Write embedding if present
+            if (cn.embed_dim > 0) {
+                file.write(reinterpret_cast<const char*>(node.embedding.data()), 
+                          cn.embed_dim * sizeof(float));
+            }
+        }
+        
+        // Write edges
+        for (const auto& edge : edges) {
+            CompactEdge ce;
+            ce.from_id = edge.u;
+            ce.to_id = edge.v;
+            ce.rel_type = 0; // Default relation
+            ce.weight = edge.weight;
+            ce.count = edge.count;
+            ce.last_ts = 0;
+            
+            file.write(reinterpret_cast<const char*>(&ce), sizeof(ce));
+        }
+        
+        file.close();
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[SNAPSHOT] Error saving: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool load_brain_snapshot(
+    const char* filepath,
+    std::unordered_map<uint64_t, ::Node>& nodes,
+    std::vector<::Edge>& edges
+) {
+    std::ifstream file(filepath, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "[SNAPSHOT] File not found (this is ok for first run): " << filepath << std::endl;
+        return false;
+    }
+    
+    try {
+        // Read header
+        BrainSnapshotHeader header;
+        file.read(reinterpret_cast<char*>(&header), sizeof(header));
+        
+        // Verify magic
+        if (header.magic[0] != 'M' || header.magic[1] != 'L' || 
+            header.magic[2] != 'V' || header.magic[3] != 'N') {
+            std::cerr << "[SNAPSHOT] Invalid magic number" << std::endl;
+            return false;
+        }
+        
+        std::cout << "[SNAPSHOT] Loading " << header.num_nodes << " nodes, " 
+                  << header.num_edges << " edges" << std::endl;
+        
+        // Read string table
+        std::vector<std::string> string_table;
+        for (uint32_t i = 0; i < header.num_nodes; i++) {
+            uint32_t len;
+            file.read(reinterpret_cast<char*>(&len), sizeof(len));
+            if (len > 0 && len < 10000) { // Sanity check
+                std::string str(len, '\0');
+                file.read(&str[0], len);
+                string_table.push_back(str);
+            }
+        }
+        
+        // Read nodes
+        nodes.clear();
+        for (uint32_t i = 0; i < header.num_nodes; i++) {
+            CompactNode cn;
+            file.read(reinterpret_cast<char*>(&cn), sizeof(cn));
+            
+            Node node;
+            node.id = cn.id;
+            if (cn.string_id < string_table.size()) {
+                node.text = string_table[cn.string_id];
+            }
+            node.type = 0;
+            node.freq = 0;
+            node.pinned = false;
+            node.attention_weight = 0.0f;
+            node.last_accessed = 0;
+            node.semantic_strength = 1.0f;
+            node.activation = 0.0f;
+            
+            // Read embedding if present
+            if (cn.embed_dim > 0 && cn.embed_dim < 10000) {
+                node.embedding.resize(cn.embed_dim);
+                file.read(reinterpret_cast<char*>(node.embedding.data()), 
+                         cn.embed_dim * sizeof(float));
+            }
+            
+            nodes[node.id] = node;
+        }
+        
+        // Read edges
+        edges.clear();
+        for (uint32_t i = 0; i < header.num_edges; i++) {
+            CompactEdge ce;
+            file.read(reinterpret_cast<char*>(&ce), sizeof(ce));
+            
+            Edge edge;
+            edge.u = ce.from_id;
+            edge.v = ce.to_id;
+            edge.locB = ce.to_id;
+            edge.weight = ce.weight;
+            edge.w_core = ce.weight;
+            edge.w_ctx = 0.0f;
+            edge.count = ce.count;
+            
+            edges.push_back(edge);
+        }
+        
+        file.close();
+        std::cout << "[SNAPSHOT] Loaded successfully" << std::endl;
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[SNAPSHOT] Error loading: " << e.what() << std::endl;
+        return false;
+    }
+}
 
 } // namespace melvin

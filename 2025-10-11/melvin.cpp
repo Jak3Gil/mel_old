@@ -134,6 +134,7 @@
 #include <functional>
 #include <regex>
 #include <fstream>
+#include "storage.h"
 #include "UCAConfig.h"
 #include "LLMReasoningEngine.h"
 #include "text_norm.h"
@@ -4239,6 +4240,10 @@ int main(int argc, char* argv[]) {
         {"Is it safe to cross?", "balanced"}
     };
     
+    // Snapshot tracking for in-memory learning
+    static uint32_t interaction_count = 0;
+    static const uint32_t SNAPSHOT_INTERVAL = 50;
+    
     for (const auto& [query, driver_mode] : demo_queries) {
         std::cout << "❓ Query: \"" << query << "\"\n";
         std::cout << "🎯 Driver mode: " << driver_mode << "\n";
@@ -4249,6 +4254,16 @@ int main(int argc, char* argv[]) {
         
         std::cout << "\n💡 Final Answer: \"" << answer << "\"\n";
         std::cout << "═══════════════════════════════════════════\n\n";
+        
+        // Increment interaction count and snapshot if needed
+        interaction_count++;
+        if (interaction_count % SNAPSHOT_INTERVAL == 0) {
+            if (melvin::save_brain_snapshot("melvin_brain.bin", G_nodes, G_edges)) {
+                std::cout << "[SNAPSHOT] Saved brain state (" 
+                          << G_nodes.size() << " nodes, "
+                          << G_edges.size() << " edges)\n\n";
+            }
+        }
     }
     
     // Display updated context field statistics

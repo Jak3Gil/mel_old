@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <random>
 #include <cmath>
+#include <fstream>
+#include <iostream>
 
 namespace melvin {
 namespace embeddings {
