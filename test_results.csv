@@ -1,8 +1,0 @@
-test_name,passed,expected_score,actual_score,explanation
-A1_HubBias,0,0.5,1.42273e-25,"Hub bias not mitigated - low confidence"
-A2_RelationPriors,0,0.1,1.42273e-25,"No relation priors detected"
-A3_ContradictionPenalty,1,0.3,1.42273e-25,"Contradiction penalty working - low confidence"
-A4_TemporalContinuity,1,0,2,"Temporal continuity metrics captured"
-A5_MultiHopDiscount,1,0.5,1,"Multi-hop discount applied"
-A6_BeamDiversity,1,0.5,1,"Beam diversity penalty applied"
-C1_LearningCurve,1,0.5,1.42273e-25,"Learning curve stable"

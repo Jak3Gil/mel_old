@@ -1,0 +1,56 @@
+# Compiled binaries
+evolution_demo
+quick_reasoning_demo
+test_graph_native_llm
+test_probabilistic_graph
+thinking_brain_demo
+test_evolution_loop
+melvin_training_demo
+melvin_continuous_learning
+melvin_stress_test
+melvin_scheduler
+
+# Shared library
+*.so
+*.dylib
+libmelvin.so
+
+# Object files
+*.o
+
+# Generated telemetry and logs
+*.jsonl
+melvin_telemetry.jsonl
+melvin_learning_telemetry.jsonl
+
+# Generated visualizations
+*.dot
+sample_melvin_graph.dot
+
+# Generated metrics
+*.csv
+melvin_stress_test_metrics.csv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Python cache (if you add Python scripts)
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
