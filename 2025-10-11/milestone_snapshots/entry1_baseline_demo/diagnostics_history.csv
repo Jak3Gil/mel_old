@@ -1,0 +1,4 @@
+date,data_layer,data_size,entropy_reduction,context_similarity,leap_success_rate,lambda,threshold,learning_rate,notes
+2025-10-11,baseline,51_nodes,0.000,0.000,0.0,0.5,0.6,0.01,Initial test graph - foundation complete
+2025-10-11,baseline,test_graph,0.000,0.000,0,0.5,0.6,0.01,Initial diagnostic system test
+2025-10-11,baseline_full,test_graph_complete,0.000,0.000,0,0.5,0.6,0.01,Full diagnostic - all 10 test prompts

@@ -1,0 +1,14 @@
+{
+  "timestamp": "20251011_151653",
+  "description": "TinyChat Sample Batch 1",
+  "data_file": "sample_dialog_data.txt",
+  "file_size_bytes": 2468,
+  "line_count": 45,
+  "md5_hash": "",
+  "metrics_before_ingestion": {
+    "context_similarity": 0.000,
+    "entropy_reduction": 0.000,
+    "leap_success_rate": 0
+  },
+  "date": "2025-10-11T19:16:53Z"
+}

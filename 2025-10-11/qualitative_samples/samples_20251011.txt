@@ -1,0 +1,66 @@
+═══════════════════════════════════════════════════════════════
+QUALITATIVE SAMPLES - Sat Oct 11 15:17:29 EDT 2025
+═══════════════════════════════════════════════════════════════
+
+Current Metrics:
+  Context Similarity:  0.000
+  Entropy Reduction:   0.000
+  Leap Success:        0%
+
+Purpose:
+  Human-readable evidence of reasoning quality.
+  These samples complement quantitative metrics.
+  
+Test Prompts: fire→water music→emotion robot→person thought→memory
+
+═══════════════════════════════════════════════════════════════
+
+Test: fire→water
+  Link Quality:      ❌ No link
+  Entropy Reduction: 0
+  Similarity:        0
+  Predictions:       smoke, heat, 
+  Comment:           Low entropy reduction - check bias strength
+  
+Test: music→emotion
+  Link Quality:      ❌ No link
+  Entropy Reduction: 0
+  Similarity:        0
+  Predictions:       emotion, , 
+  Comment:           Low entropy reduction - check bias strength
+  
+Test: robot→person
+  Link Quality:      ❌ No link
+  Entropy Reduction: 0
+  Similarity:        0
+  Predictions:       , , 
+  Comment:           No candidates
+  
+Test: thought→memory
+  Link Quality:      ❌ No link
+  Entropy Reduction: 0
+  Similarity:        0
+  Predictions:       , , 
+  Comment:           No candidates
+  
+═══════════════════════════════════════════════════════════════
+INTERPRETATION:
+═══════════════════════════════════════════════════════════════
+
+Summary:
+  Strong links:    0
+0 / 4
+  Moderate links:  0
+0 / 4
+  Weak links:      0
+0 / 4
+  No links:        4 / 4
+
+Overall Assessment:
+  ⚠️  Early stage - More data needed
+
+These qualitative samples provide human-readable evidence that
+complements the quantitative metrics. When predictions make
+intuitive sense AND numbers are good, reasoning is real.
+
+═══════════════════════════════════════════════════════════════
