@@ -190,6 +190,7 @@ clean:
 	rm -f logs/continuous_learning_metrics.csv
 	rm -f bin/test_multihop test_multihop src/reasoning/*.o
 	rm -f bin/test_edge_decay test_edge_decay src/learning/*.o
+	rm -f bin/test_srs_scheduler test_srs_scheduler src/evolution/*.o
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
@@ -243,12 +244,14 @@ help:
 	@echo "  teach_dir DIR=<path>     - Teach entire curriculum directory"
 	@echo ""
 	@echo "Evolution Mode (Patch Pack E):"
-	@echo "  evolution                - Build evolution mode components"
+	@echo "  evolution                - Build evolution mode components (Phase 1+2+3)"
 	@echo "  test_multihop            - Build multi-hop reasoning tests"
 	@echo "  run_test_multihop        - Run multi-hop reasoning tests"
 	@echo "  test_edge_decay          - Build edge decay tests"
 	@echo "  run_test_edge_decay      - Run edge decay tests"
-	@echo "  test_evolution           - Run all evolution mode tests (multihop + decay)"
+	@echo "  test_srs_scheduler       - Build SRS scheduler tests"
+	@echo "  run_test_srs_scheduler   - Run SRS scheduler tests"
+	@echo "  test_evolution           - Run all evolution mode tests (Phase 1+2+3)"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -385,7 +388,8 @@ run_cl: cl
 # --- Evolution Mode (Patch Pack E) ---
 # Phase 1: Multi-Hop Reasoning
 # Phase 2: Edge Decay
-EVOLUTION_OBJS = src/reasoning/multihop_engine.o src/learning/edge_decay.o
+# Phase 3: SRS Scheduler
+EVOLUTION_OBJS = src/reasoning/multihop_engine.o src/learning/edge_decay.o src/evolution/srs_scheduler.o
 
 src/reasoning/multihop_engine.o: src/reasoning/multihop_engine.cpp src/reasoning/multihop_engine.h
 	@mkdir -p src/reasoning
@@ -395,11 +399,19 @@ src/learning/edge_decay.o: src/learning/edge_decay.cpp src/learning/edge_decay.h
 	@mkdir -p src/learning
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
+src/evolution/srs_scheduler.o: src/evolution/srs_scheduler.cpp src/evolution/srs_scheduler.h
+	@mkdir -p src/evolution
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
 test_multihop: tests/test_multihop.cpp src/reasoning/multihop_engine.o
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
 
 test_edge_decay: tests/test_edge_decay.cpp src/learning/edge_decay.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+test_srs_scheduler: tests/test_srs_scheduler.cpp src/evolution/srs_scheduler.o
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
 
@@ -411,18 +423,27 @@ run_test_edge_decay: test_edge_decay
 	@echo "Running Edge Decay System tests..."
 	@./bin/test_edge_decay
 
+run_test_srs_scheduler: test_srs_scheduler
+	@echo "Running SRS Scheduler tests..."
+	@./bin/test_srs_scheduler
+
 # Evolution mode targets (will expand in later phases)
 evolution: $(EVOLUTION_OBJS)
-	@echo "✅ Evolution Mode components built"
+	@echo "✅ Evolution Mode components built (Phase 1, 2, 3)"
 
-test_evolution: test_multihop test_edge_decay
+test_evolution: test_multihop test_edge_decay test_srs_scheduler
 	@echo ""
-	@echo "Running all Evolution Mode tests..."
+	@echo "╔═══════════════════════════════════════════════════════╗"
+	@echo "║    EVOLUTION MODE - FULL TEST SUITE                  ║"
+	@echo "╚═══════════════════════════════════════════════════════╝"
 	@echo ""
 	@./bin/test_multihop
 	@echo ""
 	@./bin/test_edge_decay
 	@echo ""
-	@echo "✅ All Evolution Mode tests complete"
+	@./bin/test_srs_scheduler
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "✅ All Evolution Mode tests complete (Phase 1+2+3)"
 
-.PHONY: evolution test_multihop run_test_multihop test_edge_decay run_test_edge_decay test_evolution
+.PHONY: evolution test_multihop run_test_multihop test_edge_decay run_test_edge_decay test_srs_scheduler run_test_srs_scheduler test_evolution
