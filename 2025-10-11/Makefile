@@ -373,12 +373,13 @@ src/continuous_learning/continuous_learning.o: src/continuous_learning/continuou
 	@mkdir -p src/continuous_learning
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
-melvin_learn_watch: src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) storage.o vm.o
+melvin_learn_watch: src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) $(EVOLUTION_OBJS) vm.o
 	@mkdir -p bin
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) $(EVOLUTION_OBJS) vm.o
 
-cl: melvin_learn_watch
+cl: evolution melvin_learn_watch
 	@echo "✅ Continuous Learning watcher built: bin/melvin_learn_watch"
+	@echo "✅ Evolution Mode integrated (Multi-Hop + Decay + SRS)"
 
 run_cl: cl
 	@./scripts/run_continuous_learning.sh
