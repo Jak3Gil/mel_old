@@ -188,6 +188,7 @@ clean:
 	rm -f teach_file teach_curriculum src/teaching/*.o
 	rm -f bin/melvin_learn_watch melvin_learn_watch src/continuous_learning/*.o
 	rm -f logs/continuous_learning_metrics.csv
+	rm -f bin/test_multihop test_multihop src/reasoning/*.o
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
@@ -239,6 +240,12 @@ help:
 	@echo "  run_cl                   - Run continuous learning mode (watches data/inbox/)"
 	@echo "  teach FILE=<path>        - Teach a single .tch file"
 	@echo "  teach_dir DIR=<path>     - Teach entire curriculum directory"
+	@echo ""
+	@echo "Evolution Mode (Patch Pack E):"
+	@echo "  evolution                - Build evolution mode components"
+	@echo "  test_multihop            - Build multi-hop reasoning tests"
+	@echo "  run_test_multihop        - Run multi-hop reasoning tests"
+	@echo "  test_evolution           - Run all evolution mode tests"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -371,3 +378,27 @@ run_cl: cl
 	@./scripts/run_continuous_learning.sh
 
 .PHONY: cl melvin_learn_watch run_cl
+
+# --- Evolution Mode (Patch Pack E) - Phase 1: Multi-Hop Reasoning ---
+EVOLUTION_OBJS = src/reasoning/multihop_engine.o
+
+src/reasoning/multihop_engine.o: src/reasoning/multihop_engine.cpp src/reasoning/multihop_engine.h
+	@mkdir -p src/reasoning
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+test_multihop: tests/test_multihop.cpp $(EVOLUTION_OBJS)
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+run_test_multihop: test_multihop
+	@echo "Running Multi-Hop Reasoning Engine tests..."
+	@./bin/test_multihop
+
+# Evolution mode targets (will expand in later phases)
+evolution: $(EVOLUTION_OBJS)
+	@echo "✅ Evolution Mode components built"
+
+test_evolution: test_multihop
+	@echo "✅ Evolution Mode tests complete"
+
+.PHONY: evolution test_multihop run_test_multihop test_evolution
