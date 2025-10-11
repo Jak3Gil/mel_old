@@ -186,6 +186,8 @@ clean:
 	rm -f leap_diagnostics.csv leap_tuning_report.md leap_tuning_results.txt
 	rm -f test_learning learning_hooks.o melvin_brain.bin
 	rm -f teach_file teach_curriculum src/teaching/*.o
+	rm -f bin/melvin_learn_watch melvin_learn_watch src/continuous_learning/*.o
+	rm -f logs/continuous_learning_metrics.csv
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
@@ -231,6 +233,12 @@ help:
 	@echo "  run_diagnostic           - Run basic diagnostic suite (10 tests)"
 	@echo "  run_diagnostic_auto_tune - Run full auto-tuning with detailed report"
 	@echo "  run_diagnostic_quick     - Run quick diagnostic (5 tests)"
+	@echo ""
+	@echo "Continuous Learning System:"
+	@echo "  cl                       - Build continuous learning watcher"
+	@echo "  run_cl                   - Run continuous learning mode (watches data/inbox/)"
+	@echo "  teach FILE=<path>        - Teach a single .tch file"
+	@echo "  teach_dir DIR=<path>     - Teach entire curriculum directory"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -343,3 +351,23 @@ teach_report:
 	@ls -lh logs/teaching/ 2>/dev/null || echo "No logs found"
 
 .PHONY: teach_file teach_curriculum teach teach_dir teach_verify teach_reset teach_report
+
+# --- Continuous Learning System ---
+BIN_DIR ?= bin
+CL_OBJS = src/continuous_learning/continuous_learning.o
+
+src/continuous_learning/continuous_learning.o: src/continuous_learning/continuous_learning.cpp src/continuous_learning/continuous_learning.h
+	@mkdir -p src/continuous_learning
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+melvin_learn_watch: src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) storage.o vm.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+cl: melvin_learn_watch
+	@echo "✅ Continuous Learning watcher built: bin/melvin_learn_watch"
+
+run_cl: cl
+	@./scripts/run_continuous_learning.sh
+
+.PHONY: cl melvin_learn_watch run_cl

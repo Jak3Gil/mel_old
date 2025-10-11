@@ -1,0 +1,20 @@
+#FACT
+plants ARE living_things
+
+#FACT
+plants NEED sunlight
+
+#FACT
+plants PRODUCE oxygen
+
+#ASSOCIATION
+sunlight POWERS photosynthesis
+
+#TEST PlantsNeed
+#QUERY What do plants need?
+#EXPECT sunlight
+
+#TEST PlantsGive
+#QUERY What do plants produce?
+#EXPECT oxygen
+

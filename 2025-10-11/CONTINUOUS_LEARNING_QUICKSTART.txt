@@ -1,0 +1,133 @@
+═══════════════════════════════════════════════════════════════════════════
+                 CONTINUOUS LEARNING MODE - QUICK START
+═══════════════════════════════════════════════════════════════════════════
+
+🚀 START LEARNING (ONE COMMAND)
+
+  ./scripts/run_continuous_learning.sh
+
+  What it does:
+  ✓ Creates necessary directories
+  ✓ Builds the watcher
+  ✓ Starts continuous learning loop
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 FEED LESSONS (IN ANOTHER TERMINAL)
+
+  # Single lesson
+  cp data/feeds/sample_00_animals_drink.tch data/inbox/
+
+  # All samples
+  cp data/feeds/*.tch data/inbox/
+
+  # Custom lesson
+  echo "#FACT
+  birds CAN fly" > data/inbox/my_lesson.tch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 WATCH IT LEARN
+
+  # Monitor metrics (live)
+  tail -f logs/continuous_learning_metrics.csv
+
+  # Check processed lessons
+  ls data/processed/
+
+  # Check for failures
+  ls data/failed/
+
+  # View latest snapshot
+  ls -lht data/snapshots/ | head -2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ CONFIGURATION
+
+  Edit: config/continuous_learning.yaml
+
+  Key settings:
+  - inbox_dir: Where to watch for .tch files
+  - poll_seconds: How often to check (default: 3)
+  - snapshot_every_seconds: Snapshot interval (default: 60)
+  - metrics_every_seconds: Metrics logging (default: 10)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 EXPECTED OUTPUT
+
+  [CL] Continuous Learning Mode Started
+  [CL] Watching: data/inbox
+  [CL] Poll interval: 3s
+  [CL] Snapshot interval: 60s
+  [CL] Metrics interval: 10s
+
+  [CL] Processing: sample_00_animals_drink.tch
+  [CL] ✓ Success: sample_00_animals_drink.tch
+  [CL] Batch complete: 1 files processed
+
+  [CL] 📸 Snapshot saved: data/snapshots/brain_2025-10-11_17-20-15.bin
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛑 STOP LEARNING
+
+  Press Ctrl+C in the terminal running the watcher
+
+  All progress is automatically saved in:
+  - data/melvin_brain.bin (main brain state)
+  - data/snapshots/ (timestamped backups)
+  - logs/continuous_learning_metrics.csv (metrics)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 KEY DIRECTORIES
+
+  data/inbox/       ← DROP .tch FILES HERE
+  data/processed/   ← Successfully learned lessons
+  data/failed/      ← Failed lessons (check for errors)
+  data/feeds/       ← Sample lessons to copy from
+  data/snapshots/   ← Periodic brain backups
+  logs/             ← Metrics CSV
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 QUICK TEST
+
+  # Terminal 1
+  ./scripts/run_continuous_learning.sh
+
+  # Terminal 2
+  cp data/feeds/sample_00_animals_drink.tch data/inbox/
+  sleep 5
+  ls data/processed/
+  # Should see: sample_00_animals_drink.tch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 FULL DOCUMENTATION
+
+  docs/CONTINUOUS_LEARNING.md           ← Complete user guide
+  CONTINUOUS_LEARNING_COMPLETE.md       ← Implementation details
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ MANUAL BUILD (IF NEEDED)
+
+  make cl                    ← Build watcher
+  ./bin/melvin_learn_watch   ← Run directly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ WHAT YOU'LL SEE
+
+  timestamp,tick,files_seen,files_ok,files_failed,nodes,edges
+  1697052123,20,5,5,0,54,58       ← nodes and edges growing!
+  1697052133,22,8,8,0,65,74
+  1697052143,24,8,8,0,65,74
+
+  This is Melvin learning. Live. In real-time. 🧠
+
+═══════════════════════════════════════════════════════════════════════════
+

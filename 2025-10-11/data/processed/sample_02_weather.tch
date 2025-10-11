@@ -1,0 +1,20 @@
+#FACT
+rain IS_A precipitation
+
+#FACT
+clouds PRODUCE rain
+
+#ASSOCIATION
+rain CAUSES wetness
+
+#ASSOCIATION
+rain HELPS plants
+
+#TEST WhatMakesRain
+#QUERY What produces rain?
+#EXPECT clouds
+
+#TEST RainEffect
+#QUERY What does rain cause?
+#EXPECT wetness
+
