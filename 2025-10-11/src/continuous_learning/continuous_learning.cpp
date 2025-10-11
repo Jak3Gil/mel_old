@@ -149,7 +149,10 @@ void ContinuousLearner::write_metrics_csv_header_if_needed() {
     if (fs::exists(cfg_.metrics_csv)) return;
     
     std::ofstream f(cfg_.metrics_csv, std::ios::app);
-    f << "timestamp,tick,files_seen,files_ok,files_failed,nodes,edges\n";
+    f << "timestamp,tick,files_seen,files_ok,files_failed,nodes,edges,"
+      << "multihop_probe_success,multihop_avg_path_len,"
+      << "decay_events,avg_edge_weight,pct_edges_below_0_1,"
+      << "srs_due,srs_reviewed,srs_pass_rate,srs_avg_interval,srs_avg_ease\n";
 }
 
 void ContinuousLearner::write_metrics_row() {
@@ -157,7 +160,11 @@ void ContinuousLearner::write_metrics_row() {
     
     std::ofstream f(cfg_.metrics_csv, std::ios::app);
     f << now_s() << "," << m_.tick << "," << m_.files_seen << "," << m_.files_ok << ","
-      << m_.files_failed << "," << m_.nodes << "," << m_.edges << "\n";
+      << m_.files_failed << "," << m_.nodes << "," << m_.edges << ","
+      << m_.multihop_probe_success << "," << m_.multihop_avg_path_len << ","
+      << m_.decay_events << "," << m_.avg_edge_weight << "," << m_.pct_edges_below_0_1 << ","
+      << m_.srs_due << "," << m_.srs_reviewed << "," << m_.srs_pass_rate << ","
+      << m_.srs_avg_interval << "," << m_.srs_avg_ease << "\n";
 }
 
 void ContinuousLearner::safe_move(const std::string& src, const std::string& dst_dir) {

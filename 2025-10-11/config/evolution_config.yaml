@@ -87,9 +87,20 @@ teaching_v2:
 
 continuous_learning_hooks:
   call_multihop_for_queries: true  # Use multi-hop in verify
-  call_decay_every_tick: false     # TODO: Enable in Phase 2
-  call_srs_every_tick: false       # TODO: Enable in Phase 3
+  call_decay_every_tick: true      # ✓ ENABLED (Phase 2)
+  call_srs_every_tick: true        # ✓ ENABLED (Phase 3)
   log_reasoning_paths: true        # Log paths to metrics CSV
+  daily_limit_per_tick: 10         # Max SRS reviews per tick
+
+# ============================================================================
+# Probes (Multi-hop query monitoring)
+# ============================================================================
+
+probes:
+  enabled: true
+  multihop_queries_file: "data/probes/multihop_5.txt"
+  run_every_ticks: 10              # Run probe every 10 ticks
+  min_success_rate: 0.6            # Target: 60%+ probe success
 
 # ============================================================================
 # Metrics & Monitoring
@@ -97,14 +108,20 @@ continuous_learning_hooks:
 
 metrics:
   log_multihop_stats: true
-  log_decay_stats: false     # TODO: Enable in Phase 2
-  log_srs_stats: false       # TODO: Enable in Phase 3
+  log_decay_stats: true      # ✓ ENABLED (Phase 2)
+  log_srs_stats: true        # ✓ ENABLED (Phase 3)
   log_path_correctness: false # TODO: Enable in Phase 5
   
   # Additional columns for continuous_learning_metrics.csv
   additional_columns:
-    - hop_count_avg
-    - path_score_avg
-    # - decay_edges_affected    # TODO: Phase 2
-    # - srs_rehearsals_due      # TODO: Phase 3
+    - multihop_probe_success   # % of probe queries answered via multi-hop
+    - multihop_avg_path_len    # Average path length in successful queries
+    - decay_events             # Number of edges decayed this tick
+    - avg_edge_weight          # Average weight across all edges
+    - pct_edges_below_0_1      # % of edges near floor (weak knowledge)
+    - srs_due                  # Items due for review
+    - srs_reviewed             # Items reviewed this tick
+    - srs_pass_rate            # Pass rate (EASY+GOOD+HARD)/total
+    - srs_avg_interval         # Average review interval (days)
+    - srs_avg_ease             # Average ease factor
 
