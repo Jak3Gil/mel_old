@@ -74,7 +74,7 @@ void test_engine_init() {
     std::cout << "✓ PASSED" << std::endl;
 }
 
-// Test 2: Find start nodes (stub test)
+// Test 2: Find start nodes
 void test_find_start_nodes() {
     std::cout << "[TEST 2] Find start nodes... ";
     
@@ -87,13 +87,24 @@ void test_find_start_nodes() {
     melvin::reasoning::MultihopEngine engine;
     auto start_nodes = engine.find_start_nodes("What do cats drink?", nodes);
     
-    // Stub implementation returns empty, so this should pass
-    assert(start_nodes.empty());  // TODO: Will have nodes after implementation
+    // Should find "cats" as a start node
+    assert(!start_nodes.empty());
+    assert(start_nodes.size() > 0);
     
-    std::cout << "✓ PASSED (stub)" << std::endl;
+    // Verify "cats" is in the start nodes
+    bool found_cats = false;
+    for (uint64_t id : start_nodes) {
+        if (nodes.at(id).text == "cats") {
+            found_cats = true;
+            break;
+        }
+    }
+    assert(found_cats);
+    
+    std::cout << "✓ PASSED" << std::endl;
 }
 
-// Test 3: Multi-hop search (stub test)
+// Test 3: Multi-hop search
 void test_multihop_search() {
     std::cout << "[TEST 3] Multi-hop search... ";
     
@@ -106,11 +117,22 @@ void test_multihop_search() {
     melvin::reasoning::MultihopEngine engine;
     auto result = engine.search("What do cats drink?", nodes, edges, adjacency);
     
-    // Stub returns success=false, so check that
-    assert(!result.success);  // TODO: Will be true after implementation
-    assert(!result.error_message.empty());
+    // Should succeed and find a path
+    assert(result.success);
+    assert(result.error_message.empty());
     
-    std::cout << "✓ PASSED (stub)" << std::endl;
+    // Should have a best path
+    assert(!result.best_path.hops.empty());
+    
+    // Answer should be "water" (cats → mammals → water)
+    assert(result.answer == "water");
+    
+    // Path should be 2 hops (cats→mammals, mammals→water)
+    assert(result.best_path.hop_count() == 2);
+    
+    std::cout << "✓ PASSED" << std::endl;
+    std::cout << "    Path: " << result.best_path.to_string(nodes) << std::endl;
+    std::cout << "    Answer: " << result.answer << std::endl;
 }
 
 // Test 4: Relation priors
@@ -166,10 +188,9 @@ int main() {
     std::cout << "╔═══════════════════════════════════════════════════════╗" << std::endl;
     std::cout << "║                                                       ║" << std::endl;
     std::cout << "║      MULTI-HOP REASONING ENGINE - UNIT TESTS         ║" << std::endl;
+    std::cout << "║              Phase 1 Implementation                  ║" << std::endl;
     std::cout << "║                                                       ║" << std::endl;
     std::cout << "╚═══════════════════════════════════════════════════════╝" << std::endl;
-    std::cout << std::endl;
-    std::cout << "Phase 1 Scaffold Tests (Stub implementations)" << std::endl;
     std::cout << std::endl;
     
     try {
@@ -183,8 +204,14 @@ int main() {
         std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
         std::cout << "✅ ALL TESTS PASSED (5/5)" << std::endl;
         std::cout << std::endl;
-        std::cout << "Note: Tests 2-3 use stub implementations." << std::endl;
-        std::cout << "      Full implementation coming in Phase 1 proper." << std::endl;
+        std::cout << "Phase 1 Implementation Complete:" << std::endl;
+        std::cout << "  ✓ Find start nodes from query" << std::endl;
+        std::cout << "  ✓ Multi-hop beam search (k=3)" << std::endl;
+        std::cout << "  ✓ Path expansion with cycle detection" << std::endl;
+        std::cout << "  ✓ Path scoring with relation priors" << std::endl;
+        std::cout << "  ✓ Query-node matching" << std::endl;
+        std::cout << std::endl;
+        std::cout << "Multi-hop reasoning engine is now fully operational!" << std::endl;
         std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
         
         return 0;
