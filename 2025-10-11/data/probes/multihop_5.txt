@@ -1,0 +1,9 @@
+# Multi-hop probe queries for continuous monitoring
+# These test 2-3 hop reasoning chains
+
+What do cats drink?
+What do plants need?
+What does rain cause?
+What can birds do?
+What do mammals produce?
+

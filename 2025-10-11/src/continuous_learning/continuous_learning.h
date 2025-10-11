@@ -26,6 +26,18 @@ struct CLMetrics {
     uint64_t files_failed = 0;
     uint64_t nodes = 0;
     uint64_t edges = 0;
+    
+    // Evolution Mode metrics (Phase 1-3 integration)
+    float multihop_probe_success = 0.0f;    // % of probes passing via multi-hop
+    float multihop_avg_path_len = 0.0f;     // Average path length
+    uint32_t decay_events = 0;              // Edges decayed this cycle
+    float avg_edge_weight = 0.0f;           // Average edge weight
+    float pct_edges_below_0_1 = 0.0f;       // % of weak edges
+    uint32_t srs_due = 0;                   // Items due for review
+    uint32_t srs_reviewed = 0;              // Items reviewed this cycle
+    float srs_pass_rate = 0.0f;             // SRS success rate
+    float srs_avg_interval = 0.0f;          // Average review interval (days)
+    float srs_avg_ease = 0.0f;              // Average ease factor
 };
 
 class ContinuousLearner {

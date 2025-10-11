@@ -1,7 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
-#include <string>
+#include <functional>
 
 // Forward declaration
 struct Edge;
@@ -9,58 +10,95 @@ struct Edge;
 namespace melvin {
 namespace learning {
 
-// Decay options
-struct DecayOptions {
-    float lambda = 0.015f;  // Decay rate (per day)
-    float w_min = 0.1f;     // Minimum weight (don't decay to zero)
-    bool prune_low = false; // Remove edges below w_min
-    bool verbose = true;
+// Decay configuration
+struct DecayConfig {
+    double half_life_days = 7.0;      // Time for weight to decay 50%
+    double floor = 0.05;              // Minimum weight (never decay below)
+    double max = 4.0;                 // Maximum weight (cap reinforcement)
+    bool enabled = true;              // Master switch
+    double check_interval_hours = 24.0; // How often to run decay pass
 };
 
-// Decay result
-struct DecayResult {
+// Statistics from decay pass
+struct DecayStats {
+    uint32_t edges_checked = 0;
     uint32_t edges_decayed = 0;
-    uint32_t edges_pruned = 0;
-    float avg_weight_before = 0.0f;
-    float avg_weight_after = 0.0f;
+    uint32_t edges_at_floor = 0;
+    double avg_weight_before = 0.0;
+    double avg_weight_after = 0.0;
+    double total_weight_lost = 0.0;
 };
 
-// Edge decay manager (Ebbinghaus forgetting curve)
-class EdgeDecay {
+// Clock interface for time (allows simulation in tests)
+class Clock {
 public:
-    // Apply decay to all edges based on time since last use
-    static DecayResult apply_decay(
-        std::vector<::Edge>& edges,
-        const std::string& current_date_iso,
-        const DecayOptions& opts = DecayOptions()
-    );
+    virtual ~Clock() = default;
+    virtual double now_seconds() const = 0;
+};
+
+// Real-time clock (production)
+class RealClock : public Clock {
+public:
+    double now_seconds() const override;
+};
+
+// Simulated clock (testing)
+class SimulatedClock : public Clock {
+public:
+    explicit SimulatedClock(double start_time = 0.0) : time_(start_time) {}
     
-    // Rehearse edges (anti-decay on success)
-    static void rehearse_edges(
-        std::vector<::Edge>& edges,
-        const std::vector<uint64_t>& path,
-        bool success,
-        float alpha = 0.05f,  // Boost on success
-        float beta = 0.8f     // Penalty on failure
-    );
+    double now_seconds() const override { return time_; }
+    void advance(double seconds) { time_ += seconds; }
+    void set_time(double seconds) { time_ = seconds; }
     
 private:
-    // Compute decay factor using Ebbinghaus formula
-    static float compute_decay_factor(
-        float days_since_use,
-        float lambda
-    );
-    
-    // Get current date (ISO 8601)
-    static std::string current_date_iso();
-    
-    // Compute days between two ISO dates
-    static float days_between(
-        const std::string& date1_iso,
-        const std::string& date2_iso
-    );
+    double time_;
 };
+
+// Edge decay engine
+class EdgeDecay {
+public:
+    explicit EdgeDecay(const DecayConfig& config, Clock* clock);
+    
+    // Apply decay to all edges (called periodically)
+    DecayStats apply_decay(std::vector<Edge>& edges);
+    
+    // Reinforce an edge (resets decay timer, increases weight)
+    void reinforce_edge(Edge& edge, double amount);
+    
+    // Get current configuration
+    const DecayConfig& config() const { return config_; }
+    
+    // Update configuration
+    void set_config(const DecayConfig& config) { config_ = config; }
+    
+    // Get last decay time
+    double last_decay_time() const { return last_decay_time_; }
+    
+private:
+    DecayConfig config_;
+    Clock* clock_;
+    double last_decay_time_;
+    
+    // Apply decay to single edge
+    void decay_edge(Edge& edge, double current_time);
+    
+    // Compute decayed weight using Ebbinghaus curve
+    double compute_decayed_weight(
+        double weight,
+        double time_since_update_days
+    ) const;
+};
+
+// Utility: Convert seconds to days
+inline double seconds_to_days(double seconds) {
+    return seconds / 86400.0;
+}
+
+// Utility: Convert days to seconds
+inline double days_to_seconds(double days) {
+    return days * 86400.0;
+}
 
 } // namespace learning
 } // namespace melvin
-

@@ -188,6 +188,9 @@ clean:
 	rm -f teach_file teach_curriculum src/teaching/*.o
 	rm -f bin/melvin_learn_watch melvin_learn_watch src/continuous_learning/*.o
 	rm -f logs/continuous_learning_metrics.csv
+	rm -f bin/test_multihop test_multihop src/reasoning/*.o
+	rm -f bin/test_edge_decay test_edge_decay src/learning/*.o
+	rm -f bin/test_srs_scheduler test_srs_scheduler src/evolution/*.o
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
@@ -239,6 +242,16 @@ help:
 	@echo "  run_cl                   - Run continuous learning mode (watches data/inbox/)"
 	@echo "  teach FILE=<path>        - Teach a single .tch file"
 	@echo "  teach_dir DIR=<path>     - Teach entire curriculum directory"
+	@echo ""
+	@echo "Evolution Mode (Patch Pack E):"
+	@echo "  evolution                - Build evolution mode components (Phase 1+2+3)"
+	@echo "  test_multihop            - Build multi-hop reasoning tests"
+	@echo "  run_test_multihop        - Run multi-hop reasoning tests"
+	@echo "  test_edge_decay          - Build edge decay tests"
+	@echo "  run_test_edge_decay      - Run edge decay tests"
+	@echo "  test_srs_scheduler       - Build SRS scheduler tests"
+	@echo "  run_test_srs_scheduler   - Run SRS scheduler tests"
+	@echo "  test_evolution           - Run all evolution mode tests (Phase 1+2+3)"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -360,14 +373,78 @@ src/continuous_learning/continuous_learning.o: src/continuous_learning/continuou
 	@mkdir -p src/continuous_learning
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
-melvin_learn_watch: src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) storage.o vm.o
+melvin_learn_watch: src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) $(EVOLUTION_OBJS) vm.o
 	@mkdir -p bin
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ src/tools/melvin_learn_watch.cpp $(CL_OBJS) $(TEACHING_OBJS) $(LEARNING_OBJS) $(EVOLUTION_OBJS) vm.o
 
-cl: melvin_learn_watch
+cl: evolution melvin_learn_watch
 	@echo "✅ Continuous Learning watcher built: bin/melvin_learn_watch"
+	@echo "✅ Evolution Mode integrated (Multi-Hop + Decay + SRS)"
 
 run_cl: cl
 	@./scripts/run_continuous_learning.sh
 
 .PHONY: cl melvin_learn_watch run_cl
+
+# --- Evolution Mode (Patch Pack E) ---
+# Phase 1: Multi-Hop Reasoning
+# Phase 2: Edge Decay
+# Phase 3: SRS Scheduler
+EVOLUTION_OBJS = src/reasoning/multihop_engine.o src/learning/edge_decay.o src/evolution/srs_scheduler.o
+
+src/reasoning/multihop_engine.o: src/reasoning/multihop_engine.cpp src/reasoning/multihop_engine.h
+	@mkdir -p src/reasoning
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+src/learning/edge_decay.o: src/learning/edge_decay.cpp src/learning/edge_decay.h
+	@mkdir -p src/learning
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+src/evolution/srs_scheduler.o: src/evolution/srs_scheduler.cpp src/evolution/srs_scheduler.h
+	@mkdir -p src/evolution
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+test_multihop: tests/test_multihop.cpp src/reasoning/multihop_engine.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+test_edge_decay: tests/test_edge_decay.cpp src/learning/edge_decay.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+test_srs_scheduler: tests/test_srs_scheduler.cpp src/evolution/srs_scheduler.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+run_test_multihop: test_multihop
+	@echo "Running Multi-Hop Reasoning Engine tests..."
+	@./bin/test_multihop
+
+run_test_edge_decay: test_edge_decay
+	@echo "Running Edge Decay System tests..."
+	@./bin/test_edge_decay
+
+run_test_srs_scheduler: test_srs_scheduler
+	@echo "Running SRS Scheduler tests..."
+	@./bin/test_srs_scheduler
+
+# Evolution mode targets (will expand in later phases)
+evolution: $(EVOLUTION_OBJS)
+	@echo "✅ Evolution Mode components built (Phase 1, 2, 3)"
+
+test_evolution: test_multihop test_edge_decay test_srs_scheduler
+	@echo ""
+	@echo "╔═══════════════════════════════════════════════════════╗"
+	@echo "║    EVOLUTION MODE - FULL TEST SUITE                  ║"
+	@echo "╚═══════════════════════════════════════════════════════╝"
+	@echo ""
+	@./bin/test_multihop
+	@echo ""
+	@./bin/test_edge_decay
+	@echo ""
+	@./bin/test_srs_scheduler
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "✅ All Evolution Mode tests complete (Phase 1+2+3)"
+
+.PHONY: evolution test_multihop run_test_multihop test_edge_decay run_test_edge_decay test_srs_scheduler run_test_srs_scheduler test_evolution

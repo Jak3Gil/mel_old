@@ -1,188 +1,150 @@
 #include "edge_decay.h"
+#include <chrono>
 #include <cmath>
 #include <algorithm>
-#include <iostream>
-#include <chrono>
-#include <iomanip>
-#include <sstream>
 
-// Full Edge definition
+// Edge structure (stub for compilation)
 struct Edge {
     uint64_t u, v;
-    uint64_t locB;
-    float weight;
-    float w_core;
-    float w_ctx;
-    uint32_t count;
+    float weight = 1.0f;
+    std::string rel;
+    uint32_t count = 0;
+    uint32_t last_access_time = 0;  // Unix timestamp (seconds)
     
-    // Extended fields for decay
-    std::string last_use_date;  // ISO 8601
-    uint32_t queries_routed = 0;
-    uint32_t queries_attempted = 0;
-    
-    void update_frequency(uint64_t total_nodes) { (void)total_nodes; }
-    
-    float utility() const {
-        if (queries_attempted == 0) return 0.0f;
-        return static_cast<float>(queries_routed) / queries_attempted;
-    }
+    void update_frequency(uint64_t) {}  // Stub
 };
 
 namespace melvin {
 namespace learning {
 
-// Get current date (ISO 8601 format)
-std::string EdgeDecay::current_date_iso() {
-    auto now = std::chrono::system_clock::now();
-    auto time_t_now = std::chrono::system_clock::to_time_t(now);
-    std::tm tm_now;
-    
-    #ifdef _WIN32
-        localtime_s(&tm_now, &time_t_now);
-    #else
-        localtime_r(&time_t_now, &tm_now);
-    #endif
-    
-    char buffer[32];
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d", &tm_now);
-    return std::string(buffer);
+// RealClock implementation
+double RealClock::now_seconds() const {
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    auto duration = now.time_since_epoch();
+    return static_cast<double>(duration_cast<seconds>(duration).count());
 }
 
-// Compute days between two dates (simplified)
-float EdgeDecay::days_between(const std::string& date1, const std::string& date2) {
-    // Simplified: assume format YYYY-MM-DD
-    // For production, use proper date library
-    // For now, return 1.0 as placeholder
-    (void)date1;
-    (void)date2;
-    return 1.0f;  // Placeholder
+// EdgeDecay implementation
+EdgeDecay::EdgeDecay(const DecayConfig& config, Clock* clock)
+    : config_(config), clock_(clock), last_decay_time_(0.0) {
+    if (clock_) {
+        last_decay_time_ = clock_->now_seconds();
+    }
 }
 
-// Compute Ebbinghaus decay factor
-float EdgeDecay::compute_decay_factor(float days, float lambda) {
-    // Ebbinghaus formula: retention = exp(-λ * t)
-    return std::exp(-lambda * days);
-}
-
-// Apply decay to all edges
-DecayResult EdgeDecay::apply_decay(
-    std::vector<::Edge>& edges,
-    const std::string& current_date,
-    const DecayOptions& opts
-) {
-    DecayResult result;
+DecayStats EdgeDecay::apply_decay(std::vector<Edge>& edges) {
+    DecayStats stats;
     
-    // Calculate average weight before
-    float sum_before = 0.0f;
+    if (!config_.enabled || !clock_) {
+        return stats;
+    }
+    
+    double current_time = clock_->now_seconds();
+    
+    // Check if enough time has passed since last decay
+    double hours_since_last = (current_time - last_decay_time_) / 3600.0;
+    if (hours_since_last < config_.check_interval_hours) {
+        return stats;  // Not time yet
+    }
+    
+    // Compute statistics before decay
+    double total_weight_before = 0.0;
     for (const auto& edge : edges) {
-        sum_before += edge.weight;
+        total_weight_before += edge.weight;
     }
-    result.avg_weight_before = edges.empty() ? 0.0f : sum_before / edges.size();
-    
-    if (opts.verbose) {
-        std::cout << "\n[DECAY] Applying Ebbinghaus decay (λ=" << opts.lambda << ")...\n";
-        std::cout << "  Current date: " << current_date << "\n";
-        std::cout << "  Total edges: " << edges.size() << "\n";
-        std::cout << "  Avg weight before: " << result.avg_weight_before << "\n";
-    }
+    stats.avg_weight_before = edges.empty() ? 0.0 : total_weight_before / edges.size();
     
     // Apply decay to each edge
-    std::vector<::Edge> surviving_edges;
+    stats.edges_checked = static_cast<uint32_t>(edges.size());
+    
     for (auto& edge : edges) {
-        // If no last_use_date, assume it's new (don't decay)
-        if (edge.last_use_date.empty()) {
-            edge.last_use_date = current_date;
-            surviving_edges.push_back(edge);
-            continue;
+        double weight_before = edge.weight;
+        
+        decay_edge(edge, current_time);
+        
+        double weight_after = edge.weight;
+        
+        // Track statistics
+        if (weight_after < weight_before) {
+            stats.edges_decayed++;
+            stats.total_weight_lost += (weight_before - weight_after);
         }
         
-        // Compute days since last use
-        float days = days_between(edge.last_use_date, current_date);
-        
-        // Apply decay
-        float decay_factor = compute_decay_factor(days, opts.lambda);
-        float new_weight = edge.weight * decay_factor;
-        
-        // Apply minimum threshold
-        new_weight = std::max(new_weight, opts.w_min);
-        
-        // Prune if below minimum and pruning enabled
-        if (opts.prune_low && new_weight <= opts.w_min) {
-            result.edges_pruned++;
-            continue;  // Skip this edge (prune it)
+        if (weight_after <= config_.floor) {
+            stats.edges_at_floor++;
         }
-        
-        if (new_weight < edge.weight) {
-            result.edges_decayed++;
-        }
-        
-        edge.weight = new_weight;
-        edge.w_core = new_weight;
-        surviving_edges.push_back(edge);
     }
     
-    // Replace with surviving edges
-    edges = surviving_edges;
-    
-    // Calculate average weight after
-    float sum_after = 0.0f;
+    // Compute statistics after decay
+    double total_weight_after = 0.0;
     for (const auto& edge : edges) {
-        sum_after += edge.weight;
+        total_weight_after += edge.weight;
     }
-    result.avg_weight_after = edges.empty() ? 0.0f : sum_after / edges.size();
+    stats.avg_weight_after = edges.empty() ? 0.0 : total_weight_after / edges.size();
     
-    if (opts.verbose) {
-        std::cout << "  Edges decayed: " << result.edges_decayed << "\n";
-        std::cout << "  Edges pruned: " << result.edges_pruned << "\n";
-        std::cout << "  Avg weight after: " << result.avg_weight_after << "\n";
-        std::cout << "  Retention: " << std::fixed << std::setprecision(1) 
-                  << (result.avg_weight_after / result.avg_weight_before * 100.0f) << "%\n\n";
-    }
+    last_decay_time_ = current_time;
     
-    return result;
+    return stats;
 }
 
-// Rehearse edges (boost/penalize based on success)
-void EdgeDecay::rehearse_edges(
-    std::vector<::Edge>& edges,
-    const std::vector<uint64_t>& path,
-    bool success,
-    float alpha,
-    float beta
-) {
-    if (path.size() < 2) {
-        return;  // Need at least 2 nodes for an edge
+void EdgeDecay::reinforce_edge(Edge& edge, double amount) {
+    if (!config_.enabled || !clock_) {
+        return;
     }
     
-    std::string today = current_date_iso();
+    // Increase weight (clamped to max)
+    edge.weight += static_cast<float>(amount);
+    edge.weight = std::min(edge.weight, static_cast<float>(config_.max));
     
-    // For each edge in the path
-    for (size_t i = 0; i + 1 < path.size(); i++) {
-        uint64_t from = path[i];
-        uint64_t to = path[i + 1];
-        
-        // Find the edge
-        for (auto& edge : edges) {
-            if (edge.u == from && edge.v == to) {
-                edge.queries_attempted++;
-                
-                if (success) {
-                    // Boost weight (anti-decay)
-                    edge.weight = std::min(edge.weight + alpha, 1.0f);
-                    edge.queries_routed++;
-                    edge.last_use_date = today;
-                } else {
-                    // Penalize weight
-                    edge.weight = std::max(edge.weight * beta, 0.1f);
-                }
-                
-                edge.w_core = edge.weight;
-                break;
-            }
-        }
+    // Reset decay timer (this edge is fresh)
+    edge.last_access_time = static_cast<uint32_t>(clock_->now_seconds());
+    
+    // Increment usage count
+    edge.count++;
+}
+
+void EdgeDecay::decay_edge(Edge& edge, double current_time) {
+    // If edge has never been accessed, initialize to current time
+    if (edge.last_access_time == 0) {
+        edge.last_access_time = static_cast<uint32_t>(current_time);
+        return;
     }
+    
+    // Compute time since last access
+    double seconds_since_access = current_time - edge.last_access_time;
+    double days_since_access = seconds_to_days(seconds_since_access);
+    
+    // Apply Ebbinghaus decay
+    double decayed_weight = compute_decayed_weight(edge.weight, days_since_access);
+    
+    // Update edge weight (clamped to floor)
+    edge.weight = static_cast<float>(std::max(decayed_weight, config_.floor));
+}
+
+double EdgeDecay::compute_decayed_weight(
+    double weight,
+    double time_since_update_days
+) const {
+    // Ebbinghaus forgetting curve:
+    // w(t) = floor + (w0 - floor) * 0.5^(t / T_half)
+    //
+    // Where:
+    // - w0 = initial weight
+    // - t = time since last access (days)
+    // - T_half = half-life (days)
+    // - floor = minimum weight
+    
+    if (time_since_update_days <= 0.0) {
+        return weight;  // No time passed
+    }
+    
+    double decay_factor = std::pow(0.5, time_since_update_days / config_.half_life_days);
+    double decayed = config_.floor + (weight - config_.floor) * decay_factor;
+    
+    // Clamp to valid range
+    return std::max(config_.floor, std::min(decayed, config_.max));
 }
 
 } // namespace learning
 } // namespace melvin
-
