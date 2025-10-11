@@ -189,6 +189,7 @@ clean:
 	rm -f bin/melvin_learn_watch melvin_learn_watch src/continuous_learning/*.o
 	rm -f logs/continuous_learning_metrics.csv
 	rm -f bin/test_multihop test_multihop src/reasoning/*.o
+	rm -f bin/test_edge_decay test_edge_decay src/learning/*.o
 	rm -rf scale_demo_*_checkpoints chemistry_snapshots_* emergence_log_*.jsonl melvin_lte_data
 
 install: library
@@ -245,7 +246,9 @@ help:
 	@echo "  evolution                - Build evolution mode components"
 	@echo "  test_multihop            - Build multi-hop reasoning tests"
 	@echo "  run_test_multihop        - Run multi-hop reasoning tests"
-	@echo "  test_evolution           - Run all evolution mode tests"
+	@echo "  test_edge_decay          - Build edge decay tests"
+	@echo "  run_test_edge_decay      - Run edge decay tests"
+	@echo "  test_evolution           - Run all evolution mode tests (multihop + decay)"
 
 # Scale demo convenience targets
 run_scale_demo_A: scale_demo
@@ -379,14 +382,24 @@ run_cl: cl
 
 .PHONY: cl melvin_learn_watch run_cl
 
-# --- Evolution Mode (Patch Pack E) - Phase 1: Multi-Hop Reasoning ---
-EVOLUTION_OBJS = src/reasoning/multihop_engine.o
+# --- Evolution Mode (Patch Pack E) ---
+# Phase 1: Multi-Hop Reasoning
+# Phase 2: Edge Decay
+EVOLUTION_OBJS = src/reasoning/multihop_engine.o src/learning/edge_decay.o
 
 src/reasoning/multihop_engine.o: src/reasoning/multihop_engine.cpp src/reasoning/multihop_engine.h
 	@mkdir -p src/reasoning
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
-test_multihop: tests/test_multihop.cpp $(EVOLUTION_OBJS)
+src/learning/edge_decay.o: src/learning/edge_decay.cpp src/learning/edge_decay.h
+	@mkdir -p src/learning
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+test_multihop: tests/test_multihop.cpp src/reasoning/multihop_engine.o
+	@mkdir -p bin
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
+
+test_edge_decay: tests/test_edge_decay.cpp src/learning/edge_decay.o
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o bin/$@ $^
 
@@ -394,11 +407,22 @@ run_test_multihop: test_multihop
 	@echo "Running Multi-Hop Reasoning Engine tests..."
 	@./bin/test_multihop
 
+run_test_edge_decay: test_edge_decay
+	@echo "Running Edge Decay System tests..."
+	@./bin/test_edge_decay
+
 # Evolution mode targets (will expand in later phases)
 evolution: $(EVOLUTION_OBJS)
 	@echo "✅ Evolution Mode components built"
 
-test_evolution: test_multihop
-	@echo "✅ Evolution Mode tests complete"
+test_evolution: test_multihop test_edge_decay
+	@echo ""
+	@echo "Running all Evolution Mode tests..."
+	@echo ""
+	@./bin/test_multihop
+	@echo ""
+	@./bin/test_edge_decay
+	@echo ""
+	@echo "✅ All Evolution Mode tests complete"
 
-.PHONY: evolution test_multihop run_test_multihop test_evolution
+.PHONY: evolution test_multihop run_test_multihop test_edge_decay run_test_edge_decay test_evolution

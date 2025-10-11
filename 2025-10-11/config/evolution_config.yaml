@@ -32,11 +32,12 @@ multihop:
 # ============================================================================
 
 decay:
-  enabled: false             # TODO: Enable in Phase 2
+  enabled: true              # ✓ ENABLED in Phase 2
   half_life_days: 7.0        # Time for weight to decay 50%
-  min_weight: 0.1            # Minimum weight threshold
+  floor: 0.05                # Minimum weight (never decay below)
+  max: 4.0                   # Maximum weight (cap reinforcement)
   check_interval_hours: 24   # How often to run decay pass
-  decay_function: exponential # exponential or linear
+  decay_function: exponential # Ebbinghaus curve
 
 # ============================================================================
 # PHASE 3: Spaced Repetition System (SRS)
