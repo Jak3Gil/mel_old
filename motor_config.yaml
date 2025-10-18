@@ -9,7 +9,7 @@ robot:
 motors:
   main_motor:
     type: "robstride"
-    can_id: 0x01
+    can_id: 0x0F  # Motor ID 15 in hex
     bus_id: 0
     
     # Physical limits (MIT protocol)
@@ -43,7 +43,7 @@ motors:
 limbs:
   test_limb:
     motors: ["main_motor"]
-    start_can_id: 0x01
+    start_can_id: 0x0F  # Motor ID 15
     dof: 1
     bus_id: 0
 
