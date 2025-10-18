@@ -1,9 +1,0 @@
-═══════════════════════════════════════════════════════════════
-  NEAREST-NEIGHBOR BIAS LOG
-  Generated: Sat Oct 11 14:57:38 EDT 2025
-  Current Context Similarity: 0.000
-═══════════════════════════════════════════════════════════════
-
-NOTE: Similarity too low (0.000 < 0.30)
-Nearest-neighbor analysis not yet meaningful.
-Re-run when similarity > 0.30

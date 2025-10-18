@@ -1,0 +1,70 @@
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  HOPFIELD-DIFFUSION DEMO BUILD SYSTEM                                     ║
+# ║  [Hopfield-Diffusion Upgrade]                                             ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra -O3 -pthread -Imelvin
+LDFLAGS = -pthread
+
+# Source files needed
+CORE_SOURCES = \
+	melvin/core/storage.cpp \
+	melvin/core/hopfield_diffusion.cpp
+
+DEMO_SOURCE = demo_hopfield_diffusion.cpp
+
+OBJECTS = $(CORE_SOURCES:.cpp=.o)
+DEMO_OBJ = $(DEMO_SOURCE:.cpp=.o)
+
+# Executable
+DEMO_BIN = demo_hopfield_diffusion
+
+.PHONY: all clean run help
+
+all: $(DEMO_BIN)
+
+# Main demo executable
+$(DEMO_BIN): $(OBJECTS) $(DEMO_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^
+	@echo "✅ Built Hopfield-Diffusion demo"
+	@echo "   Run with: ./$(DEMO_BIN)"
+
+# Generic object file rule
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Run the demo
+run: $(DEMO_BIN)
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Running Hopfield-Diffusion Demo..."
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	./$(DEMO_BIN)
+
+# Clean build artifacts
+clean:
+	rm -f $(OBJECTS) $(DEMO_OBJ) $(DEMO_BIN)
+	@echo "✅ Cleaned Hopfield-Diffusion build artifacts"
+
+# Help
+help:
+	@echo "╔═══════════════════════════════════════════════════════╗"
+	@echo "║  HOPFIELD-DIFFUSION DEMO BUILD SYSTEM                 ║"
+	@echo "╚═══════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make all     - Build Hopfield-Diffusion demo"
+	@echo "  make run     - Build and run demo"
+	@echo "  make clean   - Remove build artifacts"
+	@echo "  make help    - Show this message"
+	@echo ""
+	@echo "Features:"
+	@echo "  ✅ Vector embeddings for memory"
+	@echo "  ✅ Attention-based diffusion"
+	@echo "  ✅ Hopfield energy minimization"
+	@echo "  ✅ Blended Hebbian + gradient learning"
+	@echo ""
+
+
+
+

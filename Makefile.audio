@@ -1,0 +1,144 @@
+# ============================================================================
+# MELVIN AUDIO SUBSYSTEM - Makefile
+# ============================================================================
+
+CXX = g++
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -I.
+LDFLAGS = -pthread
+
+# Directories
+AUDIO_DIR = melvin/audio
+CORE_DIR = melvin/core
+DEMOS_DIR = melvin/demos
+TESTS_DIR = melvin/tests
+BUILD_DIR = build
+
+# Source files
+AUDIO_SOURCES = $(AUDIO_DIR)/audio_pipeline.cpp $(AUDIO_DIR)/audio_bridge.cpp
+CORE_SOURCES = $(CORE_DIR)/atomic_graph.cpp
+DEMO_SOURCE = $(DEMOS_DIR)/demo_audio_integration.cpp
+TEST_SOURCE = $(TESTS_DIR)/test_audio_bridge.cpp
+
+# Object files
+AUDIO_OBJECTS = $(BUILD_DIR)/audio_pipeline.o $(BUILD_DIR)/audio_bridge.o
+CORE_OBJECTS = $(BUILD_DIR)/atomic_graph.o
+
+# Targets
+DEMO_TARGET = demo_audio_integration
+TEST_TARGET = test_audio_bridge
+
+# ============================================================================
+# MAIN TARGETS
+# ============================================================================
+
+.PHONY: all clean demo test
+
+all: $(DEMO_TARGET) $(TEST_TARGET)
+
+demo: $(DEMO_TARGET)
+	@echo "✅ Audio demo built successfully"
+	@echo "Run with: ./$(DEMO_TARGET)"
+
+test: $(TEST_TARGET)
+	@echo "✅ Audio tests built successfully"
+	@echo "Run with: ./$(TEST_TARGET)"
+
+# ============================================================================
+# BUILD RULES
+# ============================================================================
+
+$(DEMO_TARGET): $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(BUILD_DIR)/demo_audio_integration.o
+	@echo "🔗 Linking demo..."
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	@echo "✅ Demo linked: $@"
+
+$(TEST_TARGET): $(AUDIO_OBJECTS) $(CORE_OBJECTS) $(BUILD_DIR)/test_audio_bridge.o
+	@echo "🔗 Linking tests..."
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	@echo "✅ Tests linked: $@"
+
+# ============================================================================
+# OBJECT FILES
+# ============================================================================
+
+$(BUILD_DIR)/%.o: $(AUDIO_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(CORE_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(DEMOS_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(TESTS_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# ============================================================================
+# DIRECTORY CREATION
+# ============================================================================
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+# ============================================================================
+# CONVENIENCE TARGETS
+# ============================================================================
+
+run-demo: $(DEMO_TARGET)
+	@echo ""
+	@./$(DEMO_TARGET) 5
+
+run-test: $(TEST_TARGET)
+	@echo ""
+	@./$(TEST_TARGET)
+
+# Build and run all
+complete: all run-test run-demo
+
+# ============================================================================
+# CLEANUP
+# ============================================================================
+
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR)
+	rm -f $(DEMO_TARGET) $(TEST_TARGET)
+	rm -f *.bin  # Remove test binary files
+	@echo "✅ Clean complete"
+
+# ============================================================================
+# HELP
+# ============================================================================
+
+help:
+	@echo "╔═══════════════════════════════════════════════════════════╗"
+	@echo "║  MELVIN AUDIO SUBSYSTEM - Build System                   ║"
+	@echo "╚═══════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make all         - Build demo and tests"
+	@echo "  make demo        - Build audio integration demo"
+	@echo "  make test        - Build test suite"
+	@echo "  make run-demo    - Build and run demo (all scenarios)"
+	@echo "  make run-test    - Build and run tests"
+	@echo "  make complete    - Build, test, and demo everything"
+	@echo "  make clean       - Remove build artifacts"
+	@echo "  make help        - Show this help message"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make demo && ./demo_audio_integration 1"
+	@echo "  make test && ./test_audio_bridge"
+	@echo ""
+
+# ============================================================================
+# DEPENDENCIES
+# ============================================================================
+
+# Auto-generate dependencies
+-include $(AUDIO_OBJECTS:.o=.d)
+-include $(CORE_OBJECTS:.o=.d)
+

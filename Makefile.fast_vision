@@ -1,0 +1,86 @@
+# Makefile for Melvin Fast Visual Perception (C++ Optimized)
+# Target: 20+ FPS real-time performance
+
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -I. -I./melvin -pthread -DHAVE_OPENCV
+LDFLAGS = -lpthread
+
+# OpenCV flags (macOS with Homebrew)
+OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4 2>/dev/null || echo "-I/usr/local/include/opencv4")
+OPENCV_LIBS = $(shell pkg-config --libs opencv4 2>/dev/null || echo "-L/usr/local/lib -lopencv_core -lopencv_videoio -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs")
+
+# Combine flags
+CXXFLAGS += $(OPENCV_CFLAGS)
+LDFLAGS += $(OPENCV_LIBS)
+
+# Source directories
+CORE_DIR = melvin/core
+IO_DIR = melvin/io
+DEMO_DIR = melvin/demos
+
+# Core objects
+CORE_OBJS = \
+	$(CORE_DIR)/storage.o \
+	$(CORE_DIR)/tokenizer.o
+
+# Fast vision objects
+VISION_OBJS = \
+	$(IO_DIR)/fast_visual_perception.o
+
+# All objects
+ALL_OBJS = $(CORE_OBJS) $(VISION_OBJS)
+
+# Targets
+all: demo_fast_vision
+
+demo_fast_vision: $(ALL_OBJS) $(DEMO_DIR)/demo_fast_vision.o
+	@echo "🔗 Linking demo_fast_vision..."
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "✅ Built demo_fast_vision"
+	@echo ""
+	@echo "🚀 Run with:"
+	@echo "   ./demo_fast_vision [camera_index] [target_fps] [duration_seconds]"
+	@echo ""
+	@echo "Examples:"
+	@echo "   ./demo_fast_vision 0 20        # FaceTime camera, 20 FPS"
+	@echo "   ./demo_fast_vision 1 30 60     # USB camera, 30 FPS, 60 seconds"
+	@echo ""
+
+# Fast vision library
+$(IO_DIR)/fast_visual_perception.o: $(IO_DIR)/fast_visual_perception.cpp $(IO_DIR)/fast_visual_perception.h
+	@echo "📦 Compiling fast_visual_perception.cpp..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Demo
+$(DEMO_DIR)/demo_fast_vision.o: $(DEMO_DIR)/demo_fast_vision.cpp
+	@echo "📦 Compiling demo_fast_vision.cpp..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Core objects
+$(CORE_DIR)/%.o: $(CORE_DIR)/%.cpp $(CORE_DIR)/%.h
+	@echo "📦 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Check OpenCV installation
+check_opencv:
+	@echo "Checking OpenCV installation..."
+	@pkg-config --modversion opencv4 2>/dev/null && echo "✅ OpenCV found" || \
+		(echo "❌ OpenCV not found. Install with: brew install opencv" && exit 1)
+
+# Install OpenCV on macOS
+install_opencv:
+	@echo "Installing OpenCV via Homebrew..."
+	brew install opencv
+
+# Clean
+clean:
+	rm -f $(ALL_OBJS) $(DEMO_DIR)/demo_fast_vision.o demo_fast_vision
+	@echo "✅ Cleaned build artifacts"
+
+# Test build
+test: demo_fast_vision
+	@echo "Testing build..."
+	./demo_fast_vision --help 2>&1 | head -5 || echo "Build successful (ignore help error)"
+
+.PHONY: all clean check_opencv install_opencv test
+

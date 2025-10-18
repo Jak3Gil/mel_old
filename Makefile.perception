@@ -1,0 +1,80 @@
+# Makefile for Melvin Visual Perception Engine
+# Build YOLO-based object detection and graph integration
+
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -I. -I./melvin
+LDFLAGS = -lpthread
+
+# Source directories
+SRC_DIR = melvin
+CORE_DIR = $(SRC_DIR)/core
+IO_DIR = $(SRC_DIR)/io
+DEMO_DIR = $(SRC_DIR)/demos
+
+# Core object files
+CORE_OBJS = \
+	$(CORE_DIR)/storage.o \
+	$(CORE_DIR)/tokenizer.o \
+	$(CORE_DIR)/learning.o \
+	$(CORE_DIR)/reasoning.o \
+	$(CORE_DIR)/hopfield_diffusion.o \
+	$(CORE_DIR)/leap_synthesis.o \
+	$(CORE_DIR)/episodic_memory.o \
+	$(CORE_DIR)/fast_learning.o \
+	$(CORE_DIR)/metrics.o
+
+# Perception-specific object files
+PERCEPTION_OBJS = \
+	$(IO_DIR)/melvin_perception.o
+
+# All object files
+ALL_OBJS = $(CORE_OBJS) $(PERCEPTION_OBJS)
+
+# Targets
+all: test_perception
+
+# Test executable
+test_perception: $(ALL_OBJS) $(DEMO_DIR)/test_visual_perception.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+	@echo "✓ Built test_perception"
+	@echo ""
+	@echo "Run tests:"
+	@echo "  ./test_perception                    # Run unit tests"
+	@echo "  ./test_perception image.jpg          # Run with YOLO detection"
+	@echo ""
+
+# Perception library
+$(IO_DIR)/melvin_perception.o: $(IO_DIR)/melvin_perception.cpp $(IO_DIR)/melvin_perception.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Test binary
+$(DEMO_DIR)/test_visual_perception.o: $(DEMO_DIR)/test_visual_perception.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Core objects (pattern rule)
+$(CORE_DIR)/%.o: $(CORE_DIR)/%.cpp $(CORE_DIR)/%.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean
+clean:
+	rm -f $(ALL_OBJS) $(DEMO_DIR)/test_visual_perception.o test_perception
+	@echo "✓ Cleaned build artifacts"
+
+# Help
+help:
+	@echo "Melvin Visual Perception Engine - Build System"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all            - Build everything (default)"
+	@echo "  test_perception - Build test executable"
+	@echo "  clean          - Remove build artifacts"
+	@echo "  help           - Show this message"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make                          # Build test binary"
+	@echo "  make clean                    # Clean"
+	@echo ""
+
+.PHONY: all clean help
+
+

@@ -1,0 +1,159 @@
+# ============================================================================
+# MELVIN VOCAL ENGINE - Biological-Style Speech Synthesis
+# ============================================================================
+
+CXX = g++
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -I.
+LDFLAGS = -pthread
+
+# Check for PortAudio
+PORTAUDIO_LIBS = $(shell pkg-config --libs portaudio-2.0 2>/dev/null || echo "-lportaudio")
+PORTAUDIO_CFLAGS = $(shell pkg-config --cflags portaudio-2.0 2>/dev/null)
+
+# Directories
+AUDIO_DIR = melvin/audio
+CORE_DIR = melvin/core
+IO_DIR = melvin/io
+EXAMPLES_DIR = melvin/examples
+TESTS_DIR = melvin/tests
+BUILD_DIR = build
+
+# Source files
+CORE_SOURCES = $(CORE_DIR)/atomic_graph.cpp
+AUDIO_SOURCES = $(AUDIO_DIR)/audio_pipeline.cpp $(AUDIO_DIR)/audio_bridge.cpp
+VOCAL_SOURCES = $(AUDIO_DIR)/phoneme_graph.cpp $(AUDIO_DIR)/vocal_engine.cpp
+IO_SOURCES = $(IO_DIR)/speech_intent.cpp $(IO_DIR)/text_to_speech_graph.cpp
+DEMO_SOURCE = $(EXAMPLES_DIR)/demo_vocal_synthesis.cpp
+TEST_SOURCE = $(TESTS_DIR)/test_vocal_engine.cpp
+
+# Object files
+CORE_OBJECTS = $(BUILD_DIR)/atomic_graph.o
+AUDIO_OBJECTS = $(BUILD_DIR)/audio_pipeline.o $(BUILD_DIR)/audio_bridge.o
+VOCAL_OBJECTS = $(BUILD_DIR)/phoneme_graph.o $(BUILD_DIR)/vocal_engine.o
+IO_OBJECTS = $(BUILD_DIR)/speech_intent.o $(BUILD_DIR)/text_to_speech_graph.o
+
+# Targets
+DEMO_TARGET = demo_vocal_synthesis
+TEST_TARGET = test_vocal_engine
+
+# ============================================================================
+# MAIN TARGETS
+# ============================================================================
+
+.PHONY: all clean demo test run-demo run-test complete help
+
+all: $(DEMO_TARGET) $(TEST_TARGET)
+	@echo "✅ Vocal engine built successfully"
+
+demo: $(DEMO_TARGET)
+	@echo "✅ Vocal synthesis demo built"
+
+test: $(TEST_TARGET)
+	@echo "✅ Vocal engine tests built"
+
+# ============================================================================
+# BUILD RULES
+# ============================================================================
+
+$(DEMO_TARGET): $(CORE_OBJECTS) $(AUDIO_OBJECTS) $(VOCAL_OBJECTS) $(IO_OBJECTS) $(BUILD_DIR)/demo_vocal_synthesis.o
+	@echo "🔗 Linking vocal synthesis demo..."
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(PORTAUDIO_LIBS)
+	@echo "✅ Built: $@"
+
+$(TEST_TARGET): $(CORE_OBJECTS) $(AUDIO_OBJECTS) $(VOCAL_OBJECTS) $(BUILD_DIR)/test_vocal_engine.o
+	@echo "🔗 Linking vocal engine tests..."
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(PORTAUDIO_LIBS)
+	@echo "✅ Built: $@"
+
+# ============================================================================
+# OBJECT FILES
+# ============================================================================
+
+$(BUILD_DIR)/%.o: $(CORE_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(PORTAUDIO_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(AUDIO_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(PORTAUDIO_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(IO_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(PORTAUDIO_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(EXAMPLES_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(PORTAUDIO_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(TESTS_DIR)/%.cpp | $(BUILD_DIR)
+	@echo "🔨 Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(PORTAUDIO_CFLAGS) -c $< -o $@
+
+# ============================================================================
+# DIRECTORY CREATION
+# ============================================================================
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+# ============================================================================
+# CONVENIENCE TARGETS
+# ============================================================================
+
+run-demo: $(DEMO_TARGET)
+	@echo ""
+	@./$(DEMO_TARGET) 6
+
+run-test: $(TEST_TARGET)
+	@echo ""
+	@./$(TEST_TARGET)
+
+# Build, test, and demo
+complete: all run-test run-demo
+	@echo ""
+	@echo "✅ Vocal engine complete system verified"
+
+# ============================================================================
+# CLEANUP
+# ============================================================================
+
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	rm -rf $(BUILD_DIR)
+	rm -f $(DEMO_TARGET) $(TEST_TARGET)
+	rm -f test_vocal.wav
+	rm -f /tmp/melvin_voice.wav
+	@echo "✅ Clean complete"
+
+# ============================================================================
+# HELP
+# ============================================================================
+
+help:
+	@echo "╔═══════════════════════════════════════════════════════════╗"
+	@echo "║  MELVIN VOCAL ENGINE - Build System                      ║"
+	@echo "╚═══════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Targets:"
+	@echo "  make all         - Build demo and tests"
+	@echo "  make demo        - Build vocal synthesis demo"
+	@echo "  make test        - Build test suite"
+	@echo "  make run-demo    - Build and run demo (all scenarios)"
+	@echo "  make run-test    - Build and run tests"
+	@echo "  make complete    - Build, test, and demo everything"
+	@echo "  make clean       - Remove build artifacts"
+	@echo "  make help        - Show this help message"
+	@echo ""
+	@echo "Features:"
+	@echo "  - Phoneme-based synthesis"
+	@echo "  - Formant filtering (vocal tract)"
+	@echo "  - Coarticulation (natural transitions)"
+	@echo "  - Learning from audio"
+	@echo "  - Graph integration"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make complete                  # Full workflow"
+	@echo "  ./demo_vocal_synthesis 1       # Basic demo"
+	@echo "  ./test_vocal_engine            # Run tests"
+	@echo ""
+

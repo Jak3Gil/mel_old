@@ -1,0 +1,160 @@
+# ============================================================================
+# MELVIN UCA - Unified Cognitive Architecture
+# Complete brain-inspired AI system
+# ============================================================================
+
+CXX = g++
+CXXFLAGS = -std=c++20 -Wall -Wextra -O3 -I. -Imelvin
+LDFLAGS = -pthread
+
+# Directories
+CORE_DIR = melvin/core
+BUILD_DIR = build/uca
+OBJ_DIR = $(BUILD_DIR)/obj
+
+# ============================================================================
+# UCA CORE MODULES (Biological Brain Analogs)
+# ============================================================================
+
+UCA_HEADERS = \
+	$(CORE_DIR)/melvin_vision.h \
+	$(CORE_DIR)/melvin_graph.h \
+	$(CORE_DIR)/melvin_reasoning.h \
+	$(CORE_DIR)/melvin_reflect.h \
+	$(CORE_DIR)/melvin_focus.h \
+	$(CORE_DIR)/melvin_output.h \
+	$(CORE_DIR)/unified_mind_uca.h
+
+UCA_SOURCES = \
+	$(CORE_DIR)/melvin_vision.cpp \
+	$(CORE_DIR)/atomic_graph.cpp \
+	$(CORE_DIR)/attention_manager.cpp
+
+UCA_OBJECTS = \
+	$(OBJ_DIR)/melvin_vision.o \
+	$(OBJ_DIR)/atomic_graph.o \
+	$(OBJ_DIR)/attention_manager.o
+
+# ============================================================================
+# TARGETS
+# ============================================================================
+
+.PHONY: all clean test demo help
+
+all: $(BUILD_DIR)/test_uca_system
+
+# Test program (demonstrates all UCA components)
+$(BUILD_DIR)/test_uca_system: test_uca_system.cpp $(UCA_OBJECTS) | $(BUILD_DIR)
+	@echo "🔧 Building UCA test program..."
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	@echo "✅ Built: $@"
+	@echo ""
+	@echo "Run with: ./$(BUILD_DIR)/test_uca_system"
+
+# Object files
+$(OBJ_DIR)/%.o: $(CORE_DIR)/%.cpp $(UCA_HEADERS) | $(OBJ_DIR)
+	@echo "📦 Compiling $<..."
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Create directories
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+$(OBJ_DIR):
+	@mkdir -p $(OBJ_DIR)
+
+# ============================================================================
+# CONVENIENCE TARGETS
+# ============================================================================
+
+test: all
+	@echo "🧪 Running UCA test suite..."
+	@./$(BUILD_DIR)/test_uca_system
+
+demo: all
+	@echo "🎬 Running UCA demonstration..."
+	@./$(BUILD_DIR)/test_uca_system
+
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@echo "✅ Clean complete"
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+
+help:
+	@echo ""
+	@echo "╔═══════════════════════════════════════════════════════════════════╗"
+	@echo "║  🧠 MELVIN UCA - Unified Cognitive Architecture                   ║"
+	@echo "╚═══════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "ARCHITECTURE OVERVIEW:"
+	@echo ""
+	@echo "  1. MelvinVision      → V1/V2/V4/IT (Visual processing)"
+	@echo "  2. MelvinGraph       → Cortical memory (Knowledge storage)"
+	@echo "  3. MelvinReasoning   → PFC (Prefrontal cortex reasoning)"
+	@echo "  4. MelvinReflection  → Predictive coding (Error learning)"
+	@echo "  5. MelvinFocus       → FEF/SC (Attention control)"
+	@echo "  6. MelvinOutput      → Motor cortex (Action generation)"
+	@echo "  7. UnifiedMindUCA    → Central orchestrator (Full loop)"
+	@echo ""
+	@echo "TARGETS:"
+	@echo ""
+	@echo "  make              Build test program"
+	@echo "  make test         Build and run tests"
+	@echo "  make demo         Build and run demo"
+	@echo "  make clean        Remove build artifacts"
+	@echo "  make help         Show this help"
+	@echo ""
+	@echo "BIOLOGICAL PARALLELS:"
+	@echo ""
+	@echo "  Vision Pipeline:   Retina → LGN → V1 → V2 → V4 → IT"
+	@echo "  Attention System:  Posterior parietal → FEF → SC"
+	@echo "  Reasoning:         PFC (dorsolateral + ventral)"
+	@echo "  Memory:            Hippocampus + Cortical networks"
+	@echo "  Learning:          Synaptic plasticity (LTP/LTD)"
+	@echo "  Output:            Motor cortex → Spinal cord → Muscles"
+	@echo ""
+	@echo "COGNITIVE LOOP:"
+	@echo ""
+	@echo "  INPUT → PERCEPTION → ATTENTION → REASONING → REFLECTION"
+	@echo "     ↑                                                ↓"
+	@echo "     └───────────────── FEEDBACK ←───────────────── OUTPUT"
+	@echo ""
+	@echo "FILES GENERATED:"
+	@echo ""
+	@echo "  • $(BUILD_DIR)/test_uca_system  - Main test executable"
+	@echo "  • $(OBJ_DIR)/*.o                - Compiled objects"
+	@echo ""
+
+# ============================================================================
+# MODULE INFORMATION
+# ============================================================================
+
+.PHONY: info modules
+
+info:
+	@echo ""
+	@echo "╔═══════════════════════════════════════════════════════════════════╗"
+	@echo "║  📊 UCA MODULE STATUS                                             ║"
+	@echo "╚═══════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "CORE MODULES:"
+	@echo ""
+	@ls -lh $(CORE_DIR)/melvin_*.h 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}'
+	@echo ""
+	@echo "IMPLEMENTATIONS:"
+	@echo ""
+	@ls -lh $(CORE_DIR)/melvin_*.cpp 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}'
+	@echo ""
+	@echo "DEPENDENCIES:"
+	@echo ""
+	@ls -lh $(CORE_DIR)/atomic_graph.* 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}'
+	@ls -lh $(CORE_DIR)/attention_manager.* 2>/dev/null | awk '{print "  " $$9 " (" $$5 ")"}'
+	@echo ""
+
+modules: info
+
+
