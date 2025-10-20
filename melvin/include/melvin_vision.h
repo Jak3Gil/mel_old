@@ -8,6 +8,9 @@
 
 namespace melvin {
 
+// Forward declaration
+class VisualContext;
+
 /**
  * VisionSystem - Retina → V1/V2/V4 → IT
  * 
@@ -25,6 +28,7 @@ public:
         float saliency;      // Bottom-up (contrast, motion, novelty)
         float goal;          // Top-down (relevance to active concepts)
         float curiosity;     // Prediction error
+        float diversity;     // NEW: Visual variety seeking
     };
     
     explicit VisionSystem(AtomicGraph& graph);

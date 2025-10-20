@@ -438,8 +438,8 @@ std::string Generator::generate_from_path(const ReasoningPath& path, const std::
     return impl_->generate_from_path(path, prompt);
 }
 
-std::string Generator::explain_concept(const std::string& concept) {
-    return impl_->explain_concept(concept);
+std::string Generator::explain_concept(const std::string& concept_name) {
+    return impl_->explain_concept(concept_name);
 }
 
 Generator::ValidationResult Generator::validate_text(const std::string& text) {

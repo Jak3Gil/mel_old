@@ -14,6 +14,11 @@ class MelvinCameraVision:
         self.focus_history = []
         self.frame_count = 0
         
+        # NEW: Visual feature tracking for diversity
+        self.color_history = []  # Track recent dominant colors
+        self.shape_history = []  # Track recent shapes (edgy vs smooth)
+        self.feature_stats = {}  # Track feature saturation
+        
         # Try to open camera
         print(f"🔍 Opening camera {camera_id}...")
         self.cap = cv2.VideoCapture(camera_id)
@@ -39,7 +44,7 @@ class MelvinCameraVision:
         print(f"   Using {self.patch_size}×{self.patch_size} patches")
     
     def compute_patch_scores(self, img):
-        """Compute attention scores (Melvin's perception)"""
+        """Compute attention scores with DIVERSITY SEEKING (Melvin's perception)"""
         scores = []
         
         grid_h = self.height // self.patch_size
@@ -56,18 +61,29 @@ class MelvinCameraVision:
                 patch = img[y:y+self.patch_size, x:x+self.patch_size]
                 gray = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)
                 
+                # Extract visual features
+                avg_color = np.mean(patch, axis=(0,1))
+                dominant_color = self._classify_color(avg_color)
+                
+                edges = cv2.Canny(gray, 50, 150)
+                edge_density = float(np.sum(edges > 0)) / (self.patch_size * self.patch_size)
+                shape_type = 'edgy' if edge_density > 0.3 else 'smooth'
+                
                 # SALIENCY: Contrast (bottom-up attention)
                 saliency = float(np.std(gray)) / 128.0
                 
                 # GOAL: Motion (top-down - looking for movement)
-                goal = 0.3  # Placeholder - would come from active concepts
+                goal = 0.3  # Placeholder
                 
                 # CURIOSITY: Edge density (novelty detection)
-                edges = cv2.Canny(gray, 50, 150)
-                curiosity = float(np.sum(edges > 0)) / (self.patch_size * self.patch_size)
+                curiosity = edge_density
                 
-                # Melvin's attention formula: F = α·S + β·G + γ·C
-                F = 0.45 * saliency + 0.35 * goal + 0.20 * curiosity
+                # DIVERSITY: Visual variety seeking (NEW!)
+                diversity = self._compute_diversity(dominant_color, shape_type)
+                
+                # Melvin's attention formula WITH DIVERSITY:
+                # F = α·S + β·G + γ·C + diversity_bonus
+                F = 0.45 * saliency + 0.35 * goal + 0.20 * curiosity + diversity
                 
                 scores.append({
                     'x': px, 'y': py,
@@ -76,10 +92,99 @@ class MelvinCameraVision:
                     'saliency': saliency,
                     'goal': goal,
                     'curiosity': curiosity,
-                    'focus': F
+                    'diversity': diversity,
+                    'focus': F,
+                    'color': dominant_color,
+                    'shape': shape_type
                 })
         
         return scores
+    
+    def _classify_color(self, avg_bgr):
+        """Classify dominant color"""
+        b, g, r = avg_bgr
+        
+        if r > 150 and r > g + 30 and r > b + 30:
+            return 'red'
+        elif b > 150 and b > r + 30 and b > g + 30:
+            return 'blue'
+        elif g > 150 and g > r + 30 and g > b + 30:
+            return 'green'
+        elif r > 200 and g > 200 and b > 200:
+            return 'bright'
+        elif r < 80 and g < 80 and b < 80:
+            return 'dark'
+        else:
+            return 'neutral'
+    
+    def _compute_diversity(self, color, shape):
+        """Compute diversity score - KEY ANTI-STICKING!"""
+        diversity = 0.0
+        
+        # Track recent colors
+        recent_colors = self.color_history[-20:] if len(self.color_history) > 20 else self.color_history
+        
+        if len(recent_colors) > 10:
+            color_count = recent_colors.count(color)
+            color_ratio = color_count / len(recent_colors)
+            
+            # If this color is over-represented (>60% of recent)
+            if color_ratio > 0.6:
+                diversity -= 0.25  # SUPPRESS repetitive color!
+            # If this color is under-represented (<20% of recent)
+            elif color_ratio < 0.2:
+                diversity += 0.25  # BOOST novel color!
+        
+        # Track recent shapes  
+        recent_shapes = self.shape_history[-20:] if len(self.shape_history) > 20 else self.shape_history
+        
+        if len(recent_shapes) > 10:
+            shape_count = recent_shapes.count(shape)
+            shape_ratio = shape_count / len(recent_shapes)
+            
+            # Shape diversity
+            if shape_ratio > 0.6:
+                diversity -= 0.15  # Too much of same shape type
+            elif shape_ratio < 0.2:
+                diversity += 0.15  # Novel shape type!
+        
+        return np.clip(diversity, -0.4, 0.4)  # Cap at ±0.4
+    
+    def _print_context_status(self, scores):
+        """Print context and diversity status to console"""
+        print("\n" + "="*70)
+        print(f"🧠 CONTEXT STATUS - Frame {self.frame_count}")
+        print("="*70)
+        
+        # Visual diversity
+        if len(self.color_history) > 10:
+            recent_colors = self.color_history[-20:]
+            color_counts = {}
+            for c in recent_colors:
+                color_counts[c] = color_counts.get(c, 0) + 1
+            
+            print("\n📊 VISUAL DIVERSITY:")
+            for color, count in sorted(color_counts.items(), key=lambda x: -x[1]):
+                ratio = count / len(recent_colors)
+                bar = '#' * int(ratio * 40)
+                status = "SATURATED!" if ratio > 0.6 else "Normal"
+                print(f"  {color:10s}: {int(ratio*100):3d}% {bar:40s} {status}")
+        
+        # Best current focus
+        if scores:
+            best = max(scores, key=lambda s: s['focus'])
+            print(f"\n🎯 CURRENT FOCUS:")
+            print(f"  Position: ({best['cx']}, {best['cy']})")
+            print(f"  Color:    {best.get('color', 'unknown')}")
+            print(f"  Shape:    {best.get('shape', 'unknown')}")
+            print(f"  Scores:   S={best['saliency']:.2f} G={best['goal']:.2f} " +
+                  f"C={best['curiosity']:.2f} D={best.get('diversity', 0):.2f}")
+            print(f"  Focus:    F={best['focus']:.2f}")
+        
+        # Focus trail
+        print(f"\n📍 FOCUS HISTORY: {len(self.focus_history)} recent shifts")
+        
+        print("="*70 + "\n")
     
     def draw_melvin_view(self, img, scores):
         """Draw what Melvin perceives"""
@@ -125,10 +230,18 @@ class MelvinCameraVision:
             cv2.putText(overlay, f"C:{best['curiosity']:.2f}", (cx + 40, y_offset),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
             
-            # Track focus
+            # Track focus position
             self.focus_history.append((cx, cy))
             if len(self.focus_history) > 30:
                 self.focus_history.pop(0)
+            
+            # Track focus FEATURES for diversity (NEW!)
+            self.color_history.append(best['color'])
+            self.shape_history.append(best['shape'])
+            if len(self.color_history) > 50:
+                self.color_history.pop(0)
+            if len(self.shape_history) > 50:
+                self.shape_history.pop(0)
             
             # Draw focus trail
             for i in range(1, len(self.focus_history)):
@@ -144,16 +257,34 @@ class MelvinCameraVision:
             cv2.line(overlay, (x, 0), (x, self.height), (80, 80, 80), 1)
         
         # Title
-        cv2.putText(overlay, "Melvin's Vision (UCA v1)", (10, 30),
-                   cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 2)
+        cv2.putText(overlay, "Melvin's Vision (UCA v1) - DIVERSITY SEEKING", (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
         
-        # Formula
-        cv2.putText(overlay, "F = 0.45*S + 0.35*G + 0.20*C", (10, 60),
+        # Formula  
+        cv2.putText(overlay, "F = 0.45*S + 0.35*G + 0.20*C + D", (10, 60),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+        cv2.putText(overlay, "(D = diversity bonus/penalty)", (10, 85),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 150), 1)
         
-        # Stats
-        cv2.putText(overlay, f"Frame: {self.frame_count}", (10, self.height - 10),
+        # Stats - show feature diversity
+        cv2.putText(overlay, f"Frame: {self.frame_count}", (10, self.height - 50),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+        
+        # Show color diversity status
+        if len(self.color_history) > 10:
+            recent = self.color_history[-20:]
+            color_counts = {}
+            for c in set(recent):
+                color_counts[c] = recent.count(c)
+            
+            y_pos = self.height - 25
+            status_text = "Visual: "
+            for color, count in sorted(color_counts.items(), key=lambda x: -x[1])[:3]:
+                ratio = count / len(recent)
+                status_text += f"{color}:{int(ratio*100)}% "
+            
+            cv2.putText(overlay, status_text, (10, y_pos),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 255, 150), 1)
         
         return overlay
     
@@ -197,6 +328,10 @@ class MelvinCameraVision:
                     display = self.draw_melvin_view(frame, scores)
                     
                     self.frame_count += 1
+                    
+                    # Print context info periodically (every 60 frames = ~2 seconds)
+                    if self.frame_count % 60 == 0:
+                        self._print_context_status(scores)
                 else:
                     # Reuse last frame when paused
                     pass

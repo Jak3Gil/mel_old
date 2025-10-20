@@ -99,7 +99,7 @@ public:
      * Generate explanation for a concept
      * Traverses graph to build explanation
      */
-    std::string explain_concept(const std::string& concept);
+    std::string explain_concept(const std::string& concept_name);
     
     // ========================================================================
     // VALIDATION

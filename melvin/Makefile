@@ -48,6 +48,14 @@ demo-context: $(OBJECTS) demo_context.cpp | $(BUILD_DIR)
 	@echo ""
 	@echo "Run with: ./$(BUILD_DIR)/demo_context"
 
+# Build multimodal context test
+test-multimodal: $(OBJECTS) test_multimodal_context.cpp | $(BUILD_DIR)
+	@echo "🔧 Building multimodal context test..."
+	$(CXX) $(CXXFLAGS) $(OBJECTS) test_multimodal_context.cpp -o $(BUILD_DIR)/test_multimodal $(LDFLAGS)
+	@echo "✅ Built: $(BUILD_DIR)/test_multimodal"
+	@echo ""
+	@echo "Run with: ./$(BUILD_DIR)/test_multimodal"
+
 # Compile object files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	@echo "📦 Compiling $<..."
