@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
+#include <cmath>
 
 namespace melvin::v2 {
 

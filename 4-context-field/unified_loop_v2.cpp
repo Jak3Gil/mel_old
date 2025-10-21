@@ -35,11 +35,15 @@ void UnifiedLoopV2::initialize_components() {
     topdown_ = std::make_unique<attention::TopDownBias>();
     attention_ = std::make_unique<attention::AttentionArbitration>(genome_);
     
+    // REAL C++ CAMERA BRIDGE (genome-driven!)
+    camera_ = std::make_unique<perception::CameraBridge>(genome_);
+    
     // Semantic bridge will be set by set_semantic_memory()
     
     if (config_.verbose) {
         std::cout << "[UnifiedLoopV2] Initialized all components from genome #" 
                   << genome_.id << std::endl;
+        std::cout << "[UnifiedLoopV2] Vision system: 100% C++ with OpenCV" << std::endl;
     }
 }
 
@@ -273,24 +277,35 @@ void UnifiedLoopV2::reset_stats() {
 std::vector<PerceivedObject> UnifiedLoopV2::perception_stage(
     const uint8_t* image_data, int width, int height) {
     
-    // Mock perception for now (will use perception bridge in production)
-    std::vector<PerceivedObject> objects;
+    // ========================================================================
+    // REAL C++ VISION PROCESSING - No more mocking!
+    // ========================================================================
     
-    if (image_data && width > 0 && height > 0) {
-        // Create mock objects
-        PerceivedObject obj1;
-        obj1.object_id = 101;
-        obj1.features.saliency = 0.7f;
-        obj1.features.novelty = 0.3f;
-        obj1.confidence = 0.8f;
-        objects.push_back(obj1);
+    if (!image_data || width <= 0 || height <= 0) {
+        return {}; // No visual input
+    }
+    
+    // Process frame through genome-driven camera bridge
+    // - Edge detection (genome-controlled threshold)
+    // - Motion detection (genome-controlled sensitivity)
+    // - Color variance (genome-controlled weighting)
+    // - Saliency computation (genome-weighted formula!)
+    
+    auto objects = camera_->process_frame(image_data, width, height);
+    
+    if (config_.verbose && !objects.empty()) {
+        std::cout << "[Perception] Detected " << objects.size() << " objects ";
         
-        PerceivedObject obj2;
-        obj2.object_id = 102;
-        obj2.features.saliency = 0.5f;
-        obj2.features.novelty = 0.6f;
-        obj2.confidence = 0.6f;
-        objects.push_back(obj2);
+        if (!objects.empty()) {
+            float max_saliency = 0.0f;
+            for (const auto& obj : objects) {
+                if (obj.features.saliency > max_saliency) {
+                    max_saliency = obj.features.saliency;
+                }
+            }
+            std::cout << "(max saliency: " << max_saliency << ")";
+        }
+        std::cout << std::endl;
     }
     
     return objects;

@@ -1,0 +1,16 @@
+{
+    "motor_13": {
+        "can_encoding": "e8 6c",
+        "max_time": 1.2695012092590332,
+        "min_time": -1.573035717010498,
+        "total_range": 2.8425369262695312
+    },
+    "motor_14": {
+        "can_encoding": "e8 74",
+        "max_time": 0.6658334732055664,
+        "min_time": -0.21370983123779297,
+        "total_range": 0.8795433044433594
+    },
+    "calibration_date": "2025-10-20 17:27:24",
+    "notes": "Boundaries in seconds of jog movement from zero position"
+}
