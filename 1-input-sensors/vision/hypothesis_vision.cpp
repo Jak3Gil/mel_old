@@ -60,10 +60,14 @@ public:
     // Frame counter
     int frame_count_ = 0;
     
+    // Foveal attention point
+    cv::Point2f focus_point_;
+    int focus_radius_ = 150;  // 300×300 region
+    
     // Stats
     HypothesisVision::Stats stats_;
     
-    Impl(const Config& cfg) : config(cfg) {}
+    Impl(const Config& cfg) : config(cfg), focus_point_(0, 0) {}
     
     // Add edge to graph
     void add_edge(NodeID from, NodeID to, EdgeType type, float weight = 1.0f) {
@@ -169,15 +173,15 @@ std::vector<std::vector<VisualPatch>> HypothesisVision::create_spatial_grid(
                 // Texture entropy (simplified)
                 vp.texture_entropy = stddev[0] / 128.0f;
                 
-                // Attention (saliency)
+                // Attention (reweighted for stability)
                 vp.saliency = stddev[0] / 128.0f;
-                vp.focus_score = vp.saliency + vp.motion * 2.0f + vp.edge_density;
+                vp.focus_score = vp.saliency + vp.motion * 5.0f + vp.edge_density * 2.0f;  // Motion >> edges >> contrast
                 
                 // Create simple embedding (8D feature vector)
                 float features[8] = {
-                    vp.color_mean[0] / 255.0f,
-                    vp.color_mean[1] / 255.0f,
-                    vp.color_mean[2] / 255.0f,
+                    static_cast<float>(vp.color_mean[0] / 255.0),
+                    static_cast<float>(vp.color_mean[1] / 255.0),
+                    static_cast<float>(vp.color_mean[2] / 255.0),
                     vp.edge_density,
                     vp.motion,
                     vp.brightness / 255.0f,
@@ -231,14 +235,26 @@ std::vector<Hypothesis> HypothesisVision::generate_hypotheses(
 ) {
     std::vector<Hypothesis> hypotheses;
     
-    // For each scale, find clusters of high-attention patches
+    // For each scale, find clusters of high-attention patches NEAR FOCUS POINT
     for (const auto& grid : grids) {
         if (grid.empty()) continue;
         
-        // Find high-attention patches
+        int patch_size = impl_->config.scales[grid[0].scale];
+        
+        // Find high-attention patches WITHIN FOCUS REGION
         std::vector<VisualPatch> interesting_patches;
         for (const auto& patch : grid) {
-            if (patch.focus_score > 0.5f) {
+            // Calculate patch center in pixel coordinates
+            float patch_center_x = patch.x * patch_size + patch_size / 2.0f;
+            float patch_center_y = patch.y * patch_size + patch_size / 2.0f;
+            
+            // Check if within focus region
+            float dist_to_focus = cv::norm(
+                cv::Point2f(patch_center_x, patch_center_y) - impl_->focus_point_
+            );
+            
+            // Only process patches near focus point with HIGH attention
+            if (dist_to_focus < impl_->focus_radius_ && patch.focus_score > 1.0f) {
                 interesting_patches.push_back(patch);
             }
         }
@@ -400,40 +416,66 @@ void HypothesisVision::track_objects_temporal(
         return;
     }
     
-    // Match current objects to previous frame
+    // Keep track of which previous objects were matched
+    std::vector<bool> prev_matched(impl_->prev_objects_.size(), false);
+    
+    // Match current objects to previous frame (much more generous matching)
     for (auto& curr_obj : current_objects) {
         float best_match_score = 0.0f;
-        NodeID best_prev_id = 0;
+        int best_prev_idx = -1;
         
-        for (const auto& prev_obj : impl_->prev_objects_) {
-            // Match based on position and size
+        for (size_t i = 0; i < impl_->prev_objects_.size(); ++i) {
+            const auto& prev_obj = impl_->prev_objects_[i];
+            
+            // Multi-factor matching (position, size, overlap)
             float dist = cv::norm(curr_obj.center - prev_obj.center);
-            float size_diff = std::abs(curr_obj.bbox.area() - prev_obj.bbox.area()) / 
-                             (float)std::max(curr_obj.bbox.area(), prev_obj.bbox.area());
+            float overlap = impl_->calculate_iou(curr_obj.bbox, prev_obj.bbox);
             
-            float match_score = 1.0f / (1.0f + dist / 100.0f + size_diff);
+            float size_ratio = (float)std::min(curr_obj.bbox.area(), prev_obj.bbox.area()) /
+                              std::max(curr_obj.bbox.area(), prev_obj.bbox.area());
             
-            if (match_score > best_match_score && 
-                match_score > impl_->config.object_match_threshold) {
+            // Generous matching: position OR overlap
+            float position_score = 1.0f / (1.0f + dist / 200.0f);  // 200px tolerance
+            float overlap_score = overlap;
+            float size_score = size_ratio;
+            
+            // Match if EITHER position is close OR there's overlap
+            float match_score = std::max(position_score * size_score, overlap_score);
+            
+            if (match_score > best_match_score && match_score > 0.3f) {  // Lower threshold
                 best_match_score = match_score;
-                best_prev_id = prev_obj.id;
+                best_prev_idx = i;
             }
         }
         
-        if (best_prev_id != 0) {
-            // Track: keep same ID, update velocity
-            for (const auto& prev_obj : impl_->prev_objects_) {
-                if (prev_obj.id == best_prev_id) {
-                    curr_obj.id = prev_obj.id;  // Maintain identity
-                    curr_obj.velocity = curr_obj.center - prev_obj.center;
-                    curr_obj.frames_tracked = prev_obj.frames_tracked + 1;
-                    curr_obj.belief_score = std::min(1.0f, 
-                        prev_obj.belief_score * 0.9f + curr_obj.belief_score * 0.1f);
-                    
-                    // TEMPORAL_NEXT edge
-                    impl_->add_edge(best_prev_id, curr_obj.id, EdgeType::TEMPORAL_NEXT);
-                    break;
-                }
+        if (best_prev_idx >= 0) {
+            const auto& prev_obj = impl_->prev_objects_[best_prev_idx];
+            
+            // Maintain identity!
+            curr_obj.id = prev_obj.id;
+            curr_obj.velocity = curr_obj.center - prev_obj.center;
+            curr_obj.frames_tracked = prev_obj.frames_tracked + 1;
+            curr_obj.frames_since_seen = 0;
+            curr_obj.concept_id = prev_obj.concept_id;  // Keep concept link
+            
+            // Smooth belief score
+            curr_obj.belief_score = prev_obj.belief_score * 0.8f + curr_obj.belief_score * 0.2f;
+            
+            // Mark as matched
+            prev_matched[best_prev_idx] = true;
+        }
+    }
+    
+    // Keep unmatched previous objects if recently seen (object persistence)
+    for (size_t i = 0; i < impl_->prev_objects_.size(); ++i) {
+        if (!prev_matched[i]) {
+            auto lost_obj = impl_->prev_objects_[i];
+            lost_obj.frames_since_seen++;
+            
+            // Keep object alive for a few frames even if not detected
+            if (lost_obj.frames_since_seen < 10) {
+                lost_obj.belief_score *= 0.9f;  // Decay confidence
+                current_objects.push_back(lost_obj);
             }
         }
     }
@@ -505,7 +547,8 @@ void HypothesisVision::update_concepts(
     // Simple concept formation: group similar recurring objects
     // (Full implementation would use clustering over time)
     
-    for (auto& obj : objects) {
+    // Need to modify objects, so work with impl_->objects_ instead
+    for (auto& obj : impl_->objects_) {
         if (obj.concept_id != 0) continue;  // Already categorized
         
         // Check against existing concepts
@@ -554,7 +597,37 @@ SceneNode HypothesisVision::process_frame(const cv::Mat& frame) {
     // 1. Spatial Grid (Multi-Scale)
     auto grids = create_spatial_grid(frame);
     
-    // 2. Generate Hypotheses
+    // 2. Move focus point to highest attention patch (STABLE version)
+    float max_focus = 0.0f;
+    cv::Point2f new_focus = impl_->focus_point_;
+    
+    if (!grids.empty() && !grids[0].empty()) {
+        // Prioritize motion heavily, require minimum threshold
+        for (const auto& patch : grids[0]) {
+            // Reweight: motion dominates
+            float weighted_score = patch.saliency + patch.motion * 5.0f + patch.edge_density * 2.0f;
+            
+            // Only consider patches with significant activity
+            if (weighted_score > 1.5f && weighted_score > max_focus) {
+                max_focus = weighted_score;
+                int patch_size = impl_->config.scales[0];
+                new_focus = cv::Point2f(
+                    patch.x * patch_size + patch_size / 2.0f,
+                    patch.y * patch_size + patch_size / 2.0f
+                );
+            }
+        }
+    }
+    
+    // Strong momentum - focus moves slowly (stable attention)
+    if (impl_->frame_count_ == 1) {
+        impl_->focus_point_ = cv::Point2f(frame.cols / 2.0f, frame.rows / 2.0f);
+    } else if (max_focus > 1.5f) {  // Only move if significant attention
+        impl_->focus_point_ = impl_->focus_point_ * 0.9f + new_focus * 0.1f;  // 90% old, 10% new
+    }
+    // else: stay put if nothing interesting
+    
+    // 3. Generate Hypotheses (after focus is updated)
     auto hypotheses = generate_hypotheses(grids);
     refine_hypotheses(hypotheses, frame);
     impl_->hypotheses_ = hypotheses;
@@ -647,12 +720,16 @@ void HypothesisVision::compare_prediction_to_reality(const cv::Mat& frame) {}
 cv::Mat HypothesisVision::visualize_graph(const cv::Mat& frame) const {
     cv::Mat vis = frame.clone();
     
+    // Draw small crosshair at focus point (minimal, not intrusive)
+    cv::drawMarker(vis, impl_->focus_point_, cv::Scalar(0, 255, 255),
+                  cv::MARKER_CROSS, 30, 2);
+    
     // Draw object bounding boxes
     for (const auto& obj : impl_->objects_) {
         cv::Scalar color = obj.frames_tracked > 10 ? 
             cv::Scalar(0, 255, 0) : cv::Scalar(0, 165, 255);
         
-        cv::rectangle(vis, obj.bbox, color, 2);
+        cv::rectangle(vis, obj.bbox, color, 3);
         
         // Draw velocity arrow
         if (cv::norm(obj.velocity) > 1.0) {
@@ -660,18 +737,21 @@ cv::Mat HypothesisVision::visualize_graph(const cv::Mat& frame) const {
             cv::arrowedLine(vis, obj.center, end, cv::Scalar(255, 255, 0), 2);
         }
         
-        // Label
+        // Label with tracking info
         std::string label = "obj" + std::to_string(obj.id % 1000);
+        if (obj.frames_tracked > 1) {
+            label += " [" + std::to_string(obj.frames_tracked) + "f]";
+        }
         if (obj.concept_id != 0) {
-            label += " [C" + std::to_string(obj.concept_id % 1000) + "]";
+            label += " C" + std::to_string(obj.concept_id % 1000);
         }
         cv::putText(vis, label, cv::Point(obj.bbox.x, obj.bbox.y - 5),
-                   cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 2);
+                   cv::FONT_HERSHEY_SIMPLEX, 0.6, color, 2);
     }
     
-    // Draw hypothesis boxes (lighter)
+    // Draw hypothesis boxes (lighter, only in focus)
     for (const auto& hyp : impl_->hypotheses_) {
-        cv::rectangle(vis, hyp.bbox, cv::Scalar(100, 100, 100), 1);
+        cv::rectangle(vis, hyp.bbox, cv::Scalar(150, 150, 150), 1);
     }
     
     return vis;
