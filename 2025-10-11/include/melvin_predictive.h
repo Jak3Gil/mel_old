@@ -36,11 +36,11 @@ private:
     std::unordered_set<std::string> recent_outputs_;  // Anti-repetition
     
 public:
-    PredictiveBrain(const std::string& brain_file = "data/melvin_brain.bin")
+    PredictiveBrain(const std::string& brain_file = "/tmp/melvin_data/melvin_brain.bin")
         : brain_file_(brain_file) {
         
         // Initialize brain - ALWAYS use unified location
-        brain_ = std::make_unique<UnifiedBrain>("data/melvin_brain.bin");
+        brain_ = std::make_unique<UnifiedBrain>("/tmp/melvin_data/melvin_brain.bin");
         
         // Initialize predictor (uses graph from storage.cpp directly)
         predictor_ = std::make_unique<GraphPredictor>();

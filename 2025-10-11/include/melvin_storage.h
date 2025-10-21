@@ -174,9 +174,9 @@ inline void reinforce_edge(int edge_id, float reward = 0.05f) {
 // ==================== PERSISTENCE ====================
 
 // CRITICAL: Always use the SAME brain file location - no exceptions!
-inline void save_brain(const std::string& filename = "data/melvin_brain.bin") {
+inline void save_brain(const std::string& filename = "/tmp/melvin_data/melvin_brain.bin") {
     // Force all saves to go to the canonical location
-    const std::string canonical_path = "data/melvin_brain.bin";
+    const std::string canonical_path = "/tmp/melvin_data/melvin_brain.bin";
     
     std::ofstream file(canonical_path, std::ios::binary);
     if (!file) {
@@ -232,9 +232,9 @@ inline void save_brain(const std::string& filename = "data/melvin_brain.bin") {
 }
 
 // CRITICAL: Always load from the SAME brain file location - no exceptions!
-inline void load_brain(const std::string& filename = "data/melvin_brain.bin") {
+inline void load_brain(const std::string& filename = "/tmp/melvin_data/melvin_brain.bin") {
     // Force all loads to come from the canonical location
-    const std::string canonical_path = "data/melvin_brain.bin";
+    const std::string canonical_path = "/tmp/melvin_data/melvin_brain.bin";
     
     std::ifstream file(canonical_path, std::ios::binary);
     if (!file) {

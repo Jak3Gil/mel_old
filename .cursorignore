@@ -1,0 +1,12 @@
+# Exclude large binary files that cause serialization issues
+2025-10-11/data/melvin_brain.bin
+**/data/*.bin
+**/data/*.dat
+**/*.bin
+
+# Exclude other potentially problematic files
+**/*.so
+**/*.dll
+**/*.exe
+**/node_modules/
+**/.git/
