@@ -1,0 +1,11 @@
+{
+    "motor_can_id": 13,
+    "zero_position_raw": 16724,
+    "max_position_raw": 16724,
+    "min_position_raw": 16724,
+    "max_offset": 0,
+    "min_offset": 0,
+    "total_range": 0,
+    "calibration_date": "2025-10-20 15:22:42",
+    "notes": "Calibrated using actual motor position feedback"
+}

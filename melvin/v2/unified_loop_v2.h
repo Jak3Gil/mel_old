@@ -9,6 +9,7 @@
 #include "attention/topdown.h"
 #include "attention/arbitration.h"
 #include "evolution/genome.h"
+#include "perception/camera_bridge.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -188,6 +189,9 @@ private:
     std::unique_ptr<attention::TopDownBias> topdown_;
     std::unique_ptr<attention::AttentionArbitration> attention_;
     
+    // Perception
+    std::unique_ptr<perception::CameraBridge> camera_;
+    
     // Memory bridge
     std::unique_ptr<memory::SemanticBridge> semantic_;
     
@@ -201,7 +205,7 @@ private:
     // INTERNAL CYCLE STAGES
     // ========================================================================
     
-    // Stage 1: Perception (mock for now - will use perception bridge)
+    // Stage 1: Perception (C++ camera bridge with genome-driven features)
     std::vector<PerceivedObject> perception_stage(const uint8_t* image_data, int width, int height);
     
     // Stage 2: Attention (saliency + topdown + arbitration)
