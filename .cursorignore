@@ -1,0 +1,44 @@
+# Binary executables
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+
+# Binary data files
+*.dat
+*.bin
+
+# Build directories
+bin/
+build/
+dist/
+
+# Large installers
+msys2-installer.exe
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE files
+.vscode/
+.idea/
+
+# Archives and media
+*.zip
+*.tar.gz
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.avi
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.backup
+
+
