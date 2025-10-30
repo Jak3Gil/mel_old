@@ -1,0 +1,84 @@
+# Build artifacts
+*.o
+*.d
+*.so
+*.a
+*.dylib
+
+# Binaries
+melvin/melvin
+melvin/melvin_ingest
+demo_llm_melvin
+melvin_unified
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Data files (optional - keep if you want to track knowledge)
+# *.bin
+# journal.bin
+# *.melvin
+
+# Logs
+*.log
+*.csv
+*.txt
+!requirements.txt
+!README*.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Research outputs
+research_results/
+*.png
+*.jpg
+*.dot
+
+# Archives (already moved)
+archive/
+
+# Python virtual environments
+venv_tts/
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Large data files (should be downloaded separately or stored elsewhere)
+data/unified_nodes.bin
+data/unified_edges.bin
+data/token_map.bin
+data/*.bin
+
+# Build artifacts
+build/
+bin/
+*.o
+*.d
+*.so
+*.a
+
+# Logs and temp files
+logs/
+*.log
+*.wav
+*.mp3
+*.db

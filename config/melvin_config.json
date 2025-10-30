@@ -1,0 +1,55 @@
+{
+  "system": {
+    "name": "Melvin",
+    "version": "1.0.0"
+  },
+  "hardware": {
+    "enable_camera": false,
+    "enable_audio": false,
+    "enable_motors": false,
+    "enable_sensors": false
+  },
+  "perception": {
+    "enable_vision": false,
+    "enable_audio": false,
+    "enable_language": true,
+    "enable_datasets": true
+  },
+  "dataset": {
+    "path": "./datasets/",
+    "books3_feed": "books3_feed.txt",
+    "tick_hz": 10,
+    "enable_live_learning": true
+  },
+  "cognition": {
+    "unified_mind": {
+      "enable": true,
+      "cycle_interval_ms": 33,
+      "memory_budget_mb": 256,
+      "max_thoughts_per_cycle": 5
+    },
+    "curiosity_level": 0.6,
+    "focus_intensity": 0.7,
+    "enable_reflection": true,
+    "enable_memory_consolidation": true,
+    "enable_feedback_learning": true
+  },
+  "action": {
+    "enable_speech": true,
+    "enable_motors": false,
+    "enable_policy": true
+  },
+  "core": {
+    "health_monitoring": true,
+    "telemetry_enabled": true
+  },
+  "runtime": {
+    "enable_live_learning": true,
+    "episodic": {
+      "interval_seconds": 20,
+      "save_enabled": true
+    },
+    "context_stack_size": 5
+  }
+}
+

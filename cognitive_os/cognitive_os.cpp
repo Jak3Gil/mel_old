@@ -1,0 +1,414 @@
+/**
+ * @file cognitive_os.cpp
+ * @brief Implementation of Cognitive OS
+ */
+
+#include "cognitive_os.h"
+#include <chrono>
+#include <thread>
+#include <algorithm>
+#include <iostream>
+
+namespace melvin {
+namespace cognitive_os {
+
+CognitiveOS::CognitiveOS() : field_(nullptr), intelligence_(nullptr) {
+    // Initialize arousal to balanced state
+    arousal_.noradrenaline = 0.5f;
+    arousal_.dopamine = 0.5f;
+    arousal_.acetylcholine = 0.5f;
+}
+
+CognitiveOS::~CognitiveOS() {
+    stop();
+}
+
+void CognitiveOS::attach(
+    melvin::intelligence::UnifiedIntelligence* intelligence,
+    FieldFacade* field
+) {
+    intelligence_ = intelligence;
+    field_ = field;
+}
+
+void CognitiveOS::start() {
+    if (running_.load(std::memory_order_relaxed)) {
+        return;
+    }
+    
+    running_.store(true, std::memory_order_relaxed);
+    
+    // Start scheduler thread
+    scheduler_thread_ = std::thread([this]() {
+        scheduler_loop();
+    });
+    
+    std::cout << "✅ Cognitive OS started\n";
+    std::cout << "   Services running at natural frequencies\n";
+    std::cout << "   Scheduler: 50 Hz (20ms ticks)\n";
+}
+
+void CognitiveOS::stop() {
+    if (!running_.load(std::memory_order_relaxed)) {
+        return;
+    }
+    
+    running_.store(false, std::memory_order_relaxed);
+    
+    if (scheduler_thread_.joinable()) {
+        scheduler_thread_.join();
+    }
+    
+    std::cout << "✅ Cognitive OS stopped\n";
+}
+
+void CognitiveOS::join() {
+    if (scheduler_thread_.joinable()) {
+        scheduler_thread_.join();
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SCHEDULER LOOP (50 Hz - 20ms ticks)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+void CognitiveOS::scheduler_loop() {
+    const auto tick_period = std::chrono::milliseconds(20);  // 50 Hz
+    auto next_tick = std::chrono::steady_clock::now();
+    
+    while (running_.load(std::memory_order_relaxed)) {
+        auto start = std::chrono::steady_clock::now();
+        
+        // Run one tick
+        run_tick();
+        
+        // Sleep until next tick
+        next_tick += tick_period;
+        std::this_thread::sleep_until(next_tick);
+        
+        total_ticks_++;
+    }
+}
+
+void CognitiveOS::run_tick() {
+    auto tick_start = std::chrono::high_resolution_clock::now();
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 1. GET FIELD METRICS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    auto field_metrics_raw = field_->get_metrics();
+    
+    FieldMetrics metrics;
+    metrics.timestamp = get_timestamp();
+    metrics.active_nodes = field_metrics_raw.active_nodes;
+    metrics.energy_variance = field_metrics_raw.energy_variance;
+    metrics.sparsity = field_metrics_raw.sparsity;
+    metrics.entropy = field_metrics_raw.entropy;
+    metrics.coherence = 0.0f;  // Computed by cognition
+    metrics.confidence = 0.0f;  // Computed by cognition
+    
+    // Publish to bus
+    bus_.publish(topics::FIELD_METRICS, metrics);
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 2. COMPUTE AROUSAL (neuromodulator analog)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    compute_arousal(metrics);
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 3. ADAPT BUDGETS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    float cpu_load = estimate_cpu_load();
+    adapt_budgets(metrics, cpu_load);
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 4. UPDATE GENOME FROM AROUSAL
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    update_genome_from_arousal();
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 5. RUN SERVICES (inline for now, at varying rates)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Cognition: 30 Hz (run every 1-2 ticks)
+    if (total_ticks_ % 2 == 0) {
+        tick_cognition(budgets_.cognition);
+    }
+    
+    // Attention: 60 Hz (run every tick)
+    tick_attention(budgets_.attention);
+    
+    // Working Memory: 30 Hz
+    if (total_ticks_ % 2 == 0) {
+        tick_working_memory(budgets_.wm);
+    }
+    
+    // Learning: 10 Hz (run every 5 ticks)
+    if (total_ticks_ % 5 == 0) {
+        tick_learning(budgets_.learning);
+    }
+    
+    // Reflection: 5 Hz (run every 10 ticks)
+    if (total_ticks_ % 10 == 0) {
+        tick_reflection(budgets_.reflection);
+    }
+    
+    // Field maintenance: every tick
+    tick_field_maintenance(0.5f);
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 6. LOG METRICS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    auto tick_end = std::chrono::high_resolution_clock::now();
+    auto tick_duration = std::chrono::duration<double, std::milli>(tick_end - tick_start);
+    
+    SystemKPIs kpis;
+    kpis.timestamp = metrics.timestamp;
+    kpis.active_nodes = metrics.active_nodes;
+    kpis.energy_variance = metrics.energy_variance;
+    kpis.sparsity = metrics.sparsity;
+    kpis.entropy = metrics.entropy;
+    kpis.coherence = metrics.coherence;
+    kpis.confidence = metrics.confidence;
+    kpis.fps = (tick_duration.count() > 0) ? (1000.0f / tick_duration.count()) : 0.0f;
+    kpis.cpu_usage = cpu_load;
+    kpis.gpu_usage = 0.0f;
+    kpis.dropped_msgs = bus_.dropped_messages();
+    kpis.services_active = 6;
+    kpis.avg_service_load = cpu_load;
+    
+    metrics_.log(kpis);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AROUSAL COMPUTATION (Neuromodulator Analog)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+void CognitiveOS::compute_arousal(const FieldMetrics& metrics) {
+    // Noradrenaline: high when novelty/entropy high
+    arousal_.noradrenaline = std::min(1.0f, metrics.entropy / 5.0f);
+    
+    // Dopamine: high when confidence high (from intelligence)
+    if (intelligence_) {
+        arousal_.dopamine = intelligence_->metrics().confidence;
+    }
+    
+    // Acetylcholine: high when need focus (low coherence)
+    arousal_.acetylcholine = 1.0f - std::min(1.0f, metrics.sparsity);
+}
+
+void CognitiveOS::update_genome_from_arousal() {
+    if (!intelligence_) return;
+    
+    auto& genome = const_cast<melvin::evolution::DynamicGenome&>(intelligence_->genome());
+    auto& params = genome.reasoning_params();
+    
+    // Temperature ← noradrenaline (high arousal = more exploration)
+    params.temperature = 0.5f + arousal_.noradrenaline;
+    
+    // Semantic threshold ← acetylcholine (high Ach = higher threshold = focus)
+    params.semantic_threshold = 0.1f + 0.3f * arousal_.acetylcholine;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// BUDGET ADAPTATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+void CognitiveOS::adapt_budgets(const FieldMetrics& metrics, float cpu_load) {
+    // Reset to defaults
+    budgets_ = ServiceBudgets();
+    
+    // If low confidence, give more time to cognition
+    if (intelligence_ && intelligence_->metrics().confidence < 0.4f) {
+        budgets_.cognition += 2.0f;
+    }
+    
+    // If high CPU load, reduce learning
+    if (cpu_load > 0.85f) {
+        budgets_.learning -= 1.0f;
+    }
+    
+    // If high entropy, increase reflection
+    if (metrics.entropy > 3.0f) {
+        budgets_.reflection += 0.5f;
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SERVICE TICKS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+void CognitiveOS::tick_cognition(float budget_ms) {
+    // Check for queries
+    auto events = bus_.poll(topics::COG_QUERY);
+    
+    for (const auto& event : events) {
+        auto query = event.get<CogQuery>();
+        if (!query || !intelligence_) continue;
+        
+        // Run reasoning
+        auto result = intelligence_->reason(query->text);
+        
+        // Publish answer
+        CogAnswer answer;
+        answer.timestamp = get_timestamp();
+        answer.text = result.answer;
+        answer.reasoning_chain = result.reasoning_path;
+        answer.confidence = result.confidence;
+        
+        bus_.publish(topics::COG_ANSWER, answer);
+        
+        // Activate result concepts in field
+        for (const auto& [concept, score] : result.top_concepts) {
+            // Would need to look up node_id from concept string
+            // For now, just update field metrics
+        }
+    }
+}
+
+void CognitiveOS::tick_attention(float budget_ms) {
+    // Simple attention: boost activations of working memory items
+    for (const auto& slot : working_memory_) {
+        field_->activate(slot.node_id, 0.05f * slot.strength, "attention");
+    }
+}
+
+void CognitiveOS::tick_working_memory(float budget_ms) {
+    // Decay existing slots
+    for (auto& slot : working_memory_) {
+        slot.strength *= 0.95f;
+        slot.age++;
+    }
+    
+    // Remove weak/old items
+    working_memory_.erase(
+        std::remove_if(working_memory_.begin(), working_memory_.end(),
+            [](const WMSlot& s) { return s.strength < 0.1f || s.age > 100; }),
+        working_memory_.end()
+    );
+    
+    // Add highly active nodes
+    auto active = field_->get_active(0.5f);
+    for (int node_id : active) {
+        float activation = field_->get_activation(node_id);
+        
+        // Check if already in WM
+        bool found = false;
+        for (auto& slot : working_memory_) {
+            if (slot.node_id == node_id) {
+                slot.strength = std::max(slot.strength, activation);
+                slot.age = 0;
+                found = true;
+                break;
+            }
+        }
+        
+        // Add new item if room
+        if (!found && working_memory_.size() < MAX_WM_SLOTS) {
+            working_memory_.push_back({node_id, activation, 0});
+        }
+    }
+    
+    // Publish WM context
+    WMContext wm;
+    wm.timestamp = get_timestamp();
+    for (const auto& slot : working_memory_) {
+        wm.node_ids.push_back(slot.node_id);
+        wm.strengths.push_back(slot.strength);
+    }
+    
+    bus_.publish(topics::WM_CONTEXT, wm);
+}
+
+void CognitiveOS::tick_learning(float budget_ms) {
+    if (!intelligence_) return;
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ONLINE LEARNING: Process feedback events and update system
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Check for motor feedback (success/failure from actions)
+    auto motor_events = bus_.poll(topics::MOTOR_FEEDBACK);
+    for (const auto& event : motor_events) {
+        // If feedback event type exists, extract success/failure
+        // For now, assume positive feedback
+        intelligence_->learn(true);  // TODO: Extract actual success value from event
+    }
+    
+    // Check for cognitive feedback (user corrections)
+    auto cognitive_feedback = bus_.poll(topics::COG_FEEDBACK);
+    for (const auto& event : cognitive_feedback) {
+        // Would extract correct/incorrect from feedback event
+        intelligence_->learn(true);  // TODO: Extract actual correctness from event
+    }
+    
+    // Hebbian learning is automatically applied after each reasoning step
+    // (see UnifiedIntelligence::reason() → apply_hebbian_learning())
+}
+
+void CognitiveOS::tick_reflection(float budget_ms) {
+    if (!intelligence_) return;
+    
+    // Observe current metrics
+    auto& metrics = intelligence_->metrics();
+    auto mode = intelligence_->mode();
+    
+    // Publish reflection command if mode changed
+    ReflectCommand cmd;
+    cmd.timestamp = get_timestamp();
+    cmd.mode = static_cast<int>(mode);
+    cmd.beta = intelligence_->genome().reasoning_params().temperature;
+    cmd.theta = intelligence_->genome().reasoning_params().semantic_threshold;
+    cmd.strategy = "adaptive";
+    
+    bus_.publish(topics::REFLECT_COMMAND, cmd);
+}
+
+void CognitiveOS::tick_field_maintenance(float budget_ms) {
+    // Global decay
+    field_->decay(0.05f);
+    
+    // Normalize degrees (optional, expensive)
+    if (total_ticks_ % 10 == 0) {
+        field_->normalize_degrees();
+    }
+    
+    // Apply k-WTA sparsity (keep top 1000 most active)
+    if (field_->get_metrics().active_nodes > 1000) {
+        field_->apply_kwta(1000);
+        
+        // Publish safety event
+        SafetyEvent safety;
+        safety.timestamp = get_timestamp();
+        safety.event_type = "BACKPRESSURE";
+        safety.severity = 0.7f;
+        safety.details = "Too many active nodes, applied k-WTA";
+        
+        bus_.publish(topics::SAFETY_EVENTS, safety);
+    }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+double CognitiveOS::get_timestamp() const {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto duration = now.time_since_epoch();
+    return std::chrono::duration<double>(duration).count();
+}
+
+float CognitiveOS::estimate_cpu_load() const {
+    // Simple estimate: if we're hitting our 20ms budget, we're at 100%
+    // This is a placeholder - real implementation would query system
+    return 0.5f;  // Assume 50% for now
+}
+
+} // namespace cognitive_os
+} // namespace melvin
+

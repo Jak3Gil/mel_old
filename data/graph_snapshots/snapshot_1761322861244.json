@@ -1,0 +1,168 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "timestamp": 1761322861,
+    "nodes_count": 11,
+    "edges_count": 11,
+    "live_activations": 0
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "",
+      "type": 1886741248,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n2",
+      "label": "",
+      "type": 111516181427200,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n3",
+      "label": "",
+      "type": 1684369922,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n4",
+      "label": "",
+      "type": 110425579418114,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n5",
+      "label": "tance_1",
+      "type": 8317701420429435649,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n6",
+      "label": "nstance_1",
+      "type": 7592899012951372801,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n7",
+      "label": "",
+      "type": 31084789069344768,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n8",
+      "label": "",
+      "type": 431348606976,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n9",
+      "label": "",
+      "type": 123640858437376,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n10",
+      "label": "instance_1",
+      "type": 6876556222672498689,
+      "activation": 0.0,
+      "live_activation": false
+    },
+    {
+      "id": "n11",
+      "label": "stance_1",
+      "type": 7955995101679937537,
+      "activation": 0.0,
+      "live_activation": false
+    }
+  ],
+  "links": [
+    {
+      "source": "n5",
+      "target": "n1",
+      "tension": 1.0,
+      "relation": "INSTANCE_OF",
+      "weight": 1.0
+    },
+    {
+      "source": "n6",
+      "target": "n2",
+      "tension": 1.0,
+      "relation": "INSTANCE_OF",
+      "weight": 1.0
+    },
+    {
+      "source": "n5",
+      "target": "n3",
+      "tension": 0.800000011920929,
+      "relation": "NEAR",
+      "weight": 0.800000011920929
+    },
+    {
+      "source": "n5",
+      "target": "n4",
+      "tension": 0.8999999761581421,
+      "relation": "NEAR",
+      "weight": 0.8999999761581421
+    },
+    {
+      "source": "n5",
+      "target": "n6",
+      "tension": 0.699999988079071,
+      "relation": "CO_OCCURS_WITH",
+      "weight": 0.699999988079071
+    },
+    {
+      "source": "n5",
+      "target": "n6",
+      "tension": 0.6000000238418579,
+      "relation": "OBSERVED_AS",
+      "weight": 0.6000000238418579
+    },
+    {
+      "source": "n10",
+      "target": "n7",
+      "tension": 1.0,
+      "relation": "INSTANCE_OF",
+      "weight": 1.0
+    },
+    {
+      "source": "n11",
+      "target": "n8",
+      "tension": 1.0,
+      "relation": "INSTANCE_OF",
+      "weight": 1.0
+    },
+    {
+      "source": "n11",
+      "target": "n10",
+      "tension": 0.8999999761581421,
+      "relation": "INSTANCE_OF",
+      "weight": 0.8999999761581421
+    },
+    {
+      "source": "n11",
+      "target": "n5",
+      "tension": 0.800000011920929,
+      "relation": "CO_OCCURS_WITH",
+      "weight": 0.800000011920929
+    },
+    {
+      "source": "n10",
+      "target": "n9",
+      "tension": 0.699999988079071,
+      "relation": "NEAR",
+      "weight": 0.699999988079071
+    }
+  ]
+}
