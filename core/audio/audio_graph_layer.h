@@ -100,7 +100,7 @@ public:
     /**
      * Check if we have enough learned associations to generate audio
      */
-    bool can_self_generate_audio(const std::vector<uint64_t>& concept_ids);
+    bool can_self_generate_audio(const std::vector<uint64_t>& concept_ids) const;
     
     // ============================================================
     // VOCAL SYNTHESIS (NEW! Phase 6)

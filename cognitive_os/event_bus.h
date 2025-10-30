@@ -26,8 +26,10 @@ namespace topics {
     constexpr const char* VISION_EVENTS = "/vision/events";
     constexpr const char* AUDIO_EVENTS = "/audio/events";
     constexpr const char* MOTOR_STATE = "/motor/state";
+    constexpr const char* MOTOR_FEEDBACK = "/motor/feedback";
     constexpr const char* COG_QUERY = "/cog/query";
     constexpr const char* COG_ANSWER = "/cog/answer";
+    constexpr const char* COG_FEEDBACK = "/cog/feedback";
     constexpr const char* FIELD_METRICS = "/field/metrics";
     constexpr const char* WM_CONTEXT = "/wm/context";
     constexpr const char* REFLECT_COMMAND = "/reflect/command";

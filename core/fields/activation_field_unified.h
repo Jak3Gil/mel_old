@@ -64,7 +64,7 @@ struct WorkingContext {
     };
     
     std::vector<ActiveConcept> concepts;  // Max 7 concepts
-    std::mutex buffer_mutex;
+    mutable std::mutex buffer_mutex;
     
     // Add/update concept in working memory
     void update_concept(int node_id, float activation, float salience, 
@@ -74,7 +74,7 @@ struct WorkingContext {
     void decay_by_time(float decay_rate);
     
     // Get most active concepts
-    std::vector<int> get_active_nodes(size_t max_count = 7);
+    std::vector<int> get_active_nodes(size_t max_count = 7) const;
     
     // Compute working context vector (mean of all active embeddings)
     std::vector<float> get_context_vector();
@@ -178,6 +178,7 @@ public:
     
     // Working context
     WorkingContext& get_working_context() { return working_context_; }
+    const WorkingContext& get_working_context() const { return working_context_; }
     
     // Context propagation
     std::vector<float> compute_global_context(int origin_node, int max_hops = 3);

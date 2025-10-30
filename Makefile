@@ -1,7 +1,14 @@
 # MELVIN Production Build System - Minimal Jetson Deployment
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -pthread -I. $(shell pkg-config --cflags opencv4 2>/dev/null || echo "")
-LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio") -lasound
+
+# Platform-specific linking
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio") -lasound -lrt -lsocketcan
+else
+    LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio")
+endif
 
 # Directories
 REASONING_DIR = core/reasoning

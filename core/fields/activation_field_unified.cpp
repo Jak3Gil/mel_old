@@ -64,7 +64,7 @@ void WorkingContext::decay_by_time(float decay_rate) {
     );
 }
 
-std::vector<int> WorkingContext::get_active_nodes(size_t max_count) {
+std::vector<int> WorkingContext::get_active_nodes(size_t max_count) const {
     std::lock_guard<std::mutex> lock(buffer_mutex);
     
     // Sort by activation * salience

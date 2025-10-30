@@ -16,14 +16,19 @@
 #include <thread>
 #include <chrono>
 #include <opencv2/opencv.hpp>
+#include <cstring>
+#include <cmath>
+
+// Linux-specific headers (only on actual Jetson)
+#ifdef __linux__
 #include <alsa/asoundlib.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <sys/socket.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
-#include <cstring>
-#include <cmath>
+#endif
+
 #include "cognitive_os/cognitive_os.h"
 #include "core/unified_intelligence.h"
 
@@ -196,7 +201,7 @@ void vision_capture_loop(EventBus* bus, const std::vector<std::string>& camera_d
                     std::chrono::high_resolution_clock::now().time_since_epoch()
                 ).count();
                 vision.obj_ids = {};  // Would be populated by vision pipeline
-                vision.embedding = {};  // Would be vision embedding
+                vision.embeddings = {};  // Would be vision embeddings
                 
                 bus->publish(topics::VISION_EVENTS, vision);
             }
@@ -208,9 +213,9 @@ void vision_capture_loop(EventBus* bus, const std::vector<std::string>& camera_d
  * Audio input capture thread - continuously listens from USB microphone
  */
 void audio_input_loop(EventBus* bus, const std::string& alsa_device) {
+#ifdef __linux__
     snd_pcm_t* pcm_handle;
     snd_pcm_hw_params_t* hw_params;
-    snd_pcm_sw_params_t* sw_params;
     
     // Open ALSA device
     if (snd_pcm_open(&pcm_handle, alsa_device.c_str(), SND_PCM_STREAM_CAPTURE, 0) < 0) {
@@ -263,12 +268,21 @@ void audio_input_loop(EventBus* bus, const std::string& alsa_device) {
     }
     
     snd_pcm_close(pcm_handle);
+#else
+    (void)bus;
+    (void)alsa_device;
+    std::cout << "   ℹ️  Audio input only available on Linux (stub on Mac)\n";
+    while (g_running.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+#endif
 }
 
 /**
  * Audio output thread - speaks responses from cognitive system
  */
 void audio_output_loop(EventBus* bus, const std::string& alsa_device) {
+#ifdef __linux__
     snd_pcm_t* pcm_handle;
     
     if (snd_pcm_open(&pcm_handle, alsa_device.c_str(), SND_PCM_STREAM_PLAYBACK, 0) < 0) {
@@ -285,6 +299,9 @@ void audio_output_loop(EventBus* bus, const std::string& alsa_device) {
     snd_pcm_hw_params_set_rate_near(pcm_handle, hw_params, &sample_rate, 0);
     snd_pcm_hw_params_set_channels(pcm_handle, hw_params, 1);
     snd_pcm_hw_params(pcm_handle, hw_params);
+#else
+    (void)alsa_device;
+#endif
     
     while (g_running.load()) {
         // Poll for cognitive answers and speak them
@@ -303,13 +320,16 @@ void audio_output_loop(EventBus* bus, const std::string& alsa_device) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
+#ifdef __linux__
     snd_pcm_close(pcm_handle);
+#endif
 }
 
 /**
  * Motor control thread - sends commands and reads feedback via CAN bus
  */
 void motor_control_loop(EventBus* bus, const std::string& can_interface) {
+#ifdef __linux__
     int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (s < 0) {
         std::cerr << "   ⚠️  Failed to open CAN socket\n";
@@ -344,9 +364,17 @@ void motor_control_loop(EventBus* bus, const std::string& can_interface) {
     }
     
     close(s);
+#else
+    (void)bus;
+    (void)can_interface;
+    std::cout << "   ℹ️  Motor control only available on Linux (stub on Mac)\n";
+    while (g_running.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+#endif
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
     print_banner();
     
     // Setup signal handlers
