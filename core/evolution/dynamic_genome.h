@@ -81,6 +81,18 @@ struct DynamicReasoningParams {
     float self_monitoring_gain;    // corollary discharge attenuation (0.1-0.3)
     float output_history_window;   // seconds to keep in history (1.0-5.0)
     
+    // Baseline/Spontaneous Activity Parameters (Default Mode Network)
+    float baseline_activity_min;        // minimum resting activity (2.0-5.0 nodes)
+    float baseline_activity_max;        // maximum resting activity (5.0-15.0 nodes)
+    float baseline_adaptation_rate;     // how fast baseline tracks recent activity (0.01-0.1)
+    float curiosity_baseline_scale;     // how much curiosity boosts baseline (0.1-0.5)
+    float boredom_baseline_scale;       // how much boredom boosts baseline (0.05-0.3)
+    float baseline_decay_multiplier;    // faster decay for spontaneous thoughts (1.2-2.0)
+    float baseline_power_budget;        // max % of total energy for baseline (0.03-0.10)
+    float dmn_cycle_period;             // seconds between network focus switches (5.0-30.0)
+    float introspection_bias;           // probability of self-related vs random (0.3-0.8)
+    float novelty_exploration_weight;   // weight for curiosity-driven exploration (0.2-0.7)
+    
     DynamicReasoningParams() :
         activation_weight(0.4f),
         semantic_bias_weight(0.4f),
@@ -118,7 +130,18 @@ struct DynamicReasoningParams {
         min_goal_importance(0.15f),
         max_context_nodes(20),
         self_monitoring_gain(0.2f),
-        output_history_window(2.0f)
+        output_history_window(2.0f),
+        // Baseline activity defaults
+        baseline_activity_min(3.0f),
+        baseline_activity_max(8.0f),
+        baseline_adaptation_rate(0.05f),
+        curiosity_baseline_scale(0.3f),
+        boredom_baseline_scale(0.15f),
+        baseline_decay_multiplier(1.5f),
+        baseline_power_budget(0.05f),
+        dmn_cycle_period(15.0f),
+        introspection_bias(0.6f),
+        novelty_exploration_weight(0.4f)
     {}
     
     void normalize_weights() {

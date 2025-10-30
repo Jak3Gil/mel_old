@@ -8,6 +8,7 @@
 #include <thread>
 #include <algorithm>
 #include <iostream>
+#include <random>
 
 namespace melvin {
 namespace cognitive_os {
@@ -272,10 +273,55 @@ void CognitiveOS::tick_cognition(float budget_ms) {
 }
 
 void CognitiveOS::tick_attention(float budget_ms) {
-    // Simple attention: boost activations of working memory items
+    (void)budget_ms;
+    if (!field_ || !intelligence_) return;
+    
+    auto metrics = field_->get_metrics();
+    auto& params = intelligence_->genome().reasoning_params();
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ADAPTIVE BASELINE ACTIVITY (Controlled Noise Floor)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Update rolling average of activity
+    float alpha = params.baseline_adaptation_rate;
+    rolling_avg_activity_ = alpha * metrics.active_nodes + (1.0f - alpha) * rolling_avg_activity_;
+    
+    // Compute drive-modulated baseline target
+    float curiosity = compute_curiosity_drive();
+    float boredom = compute_boredom_drive();
+    
+    target_baseline_activity_ = 
+        rolling_avg_activity_ * 0.8f +  // Track recent history
+        params.baseline_activity_min +  // Minimum floor
+        params.curiosity_baseline_scale * curiosity +  // Curiosity boost
+        params.boredom_baseline_scale * boredom;  // Boredom boost
+    
+    // Clamp to genome-defined range
+    target_baseline_activity_ = std::max(params.baseline_activity_min,
+        std::min(params.baseline_activity_max, target_baseline_activity_));
+    
+    // If below target, inject contextual spontaneous activity
+    if (metrics.active_nodes < target_baseline_activity_) {
+        int nodes_needed = static_cast<int>(target_baseline_activity_ - metrics.active_nodes);
+        
+        // Sample contextual seeds (biased towards recent/self nodes)
+        auto seeds = sample_contextual_seeds(nodes_needed);
+        
+        // Activate with curiosity-weighted energy
+        float base_energy = params.baseline_power_budget * curiosity * 0.5f + 0.05f;
+        for (int node_id : seeds) {
+            field_->activate(node_id, base_energy, "baseline");
+        }
+    }
+    
+    // Boost working memory items (attention amplification)
     for (const auto& slot : working_memory_) {
         field_->activate(slot.node_id, 0.05f * slot.strength, "attention");
     }
+    
+    // Update recent node history for contextual seeding
+    update_baseline_targets(metrics.active_nodes, metrics.entropy, 0.5f);
 }
 
 void CognitiveOS::tick_working_memory(float budget_ms) {
@@ -407,6 +453,100 @@ float CognitiveOS::estimate_cpu_load() const {
     // Simple estimate: if we're hitting our 20ms budget, we're at 100%
     // This is a placeholder - real implementation would query system
     return 0.5f;  // Assume 50% for now
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ADAPTIVE BASELINE HELPERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+void CognitiveOS::update_baseline_targets(int active_nodes, float entropy, float coherence) {
+    (void)active_nodes;  // Used implicitly via rolling_avg_activity_
+    
+    // Update boredom: increases when low novelty
+    if (entropy < 0.3f) {
+        boredom_accumulator_ += 0.01f;
+    } else {
+        boredom_accumulator_ *= 0.95f;  // Decay when things are interesting
+    }
+    boredom_accumulator_ = std::min(1.0f, boredom_accumulator_);
+    
+    // Update prediction error (curiosity) based on coherence
+    // Low coherence = high surprise = high curiosity
+    recent_prediction_error_ = 0.9f * recent_prediction_error_ + 
+                               0.1f * (1.0f - coherence);
+}
+
+std::vector<int> CognitiveOS::sample_contextual_seeds(int k) {
+    if (!intelligence_) return {};
+    
+    auto& params = intelligence_->genome().reasoning_params();
+    std::vector<int> seeds;
+    
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_real_distribution<float> prob_dist(0.0f, 1.0f);
+    std::uniform_int_distribution<int> node_dist(0, 24);  // Assuming 25 nodes in minimal graph
+    
+    // Network cycling: alternate focus areas
+    double now = get_timestamp();
+    if (now - last_dmn_switch_ > params.dmn_cycle_period) {
+        // Cycle through DMN focuses
+        switch (dmn_focus_) {
+            case DMNFocus::INTROSPECTION:
+                dmn_focus_ = DMNFocus::SALIENCE;
+                break;
+            case DMNFocus::SALIENCE:
+                dmn_focus_ = DMNFocus::EXPLORATION;
+                break;
+            case DMNFocus::EXPLORATION:
+                dmn_focus_ = DMNFocus::INTROSPECTION;
+                break;
+        }
+        last_dmn_switch_ = now;
+    }
+    
+    for (int i = 0; i < k; i++) {
+        int node_id;
+        
+        if (dmn_focus_ == DMNFocus::INTROSPECTION) {
+            // Introspection: bias towards self-related nodes (0-5)
+            if (prob_dist(rng) < params.introspection_bias) {
+                node_id = std::uniform_int_distribution<int>(0, 5)(rng);
+            } else {
+                node_id = node_dist(rng);
+            }
+        } else if (dmn_focus_ == DMNFocus::EXPLORATION) {
+            // Exploration: novelty-weighted random selection
+            // Bias towards nodes not recently active
+            node_id = node_dist(rng);
+            // TODO: Filter against recent_active_nodes_ for true novelty
+        } else {
+            // Salience: working memory or random
+            if (!working_memory_.empty() && prob_dist(rng) < 0.5f) {
+                auto& slot = working_memory_[std::uniform_int_distribution<size_t>(0, working_memory_.size()-1)(rng)];
+                node_id = slot.node_id;
+            } else {
+                node_id = node_dist(rng);
+            }
+        }
+        
+        seeds.push_back(node_id);
+    }
+    
+    return seeds;
+}
+
+float CognitiveOS::compute_curiosity_drive() const {
+    if (!intelligence_) return 0.0f;
+    
+    auto& params = intelligence_->genome().reasoning_params();
+    
+    // Curiosity = prediction error + novelty seeking trait
+    return params.novelty_exploration_weight * recent_prediction_error_;
+}
+
+float CognitiveOS::compute_boredom_drive() const {
+    // Boredom accumulates when environment is repetitive
+    return boredom_accumulator_;
 }
 
 } // namespace cognitive_os

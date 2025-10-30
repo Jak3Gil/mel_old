@@ -149,8 +149,23 @@ private:
     uint64_t total_ticks_{0};
     double last_tick_time_{0.0};
     
+    // Adaptive baseline activity state
+    float rolling_avg_activity_{5.0f};         // Exponential moving average of active nodes
+    float target_baseline_activity_{5.0f};     // Dynamic target for baseline
+    float recent_prediction_error_{0.0f};      // Curiosity metric
+    float boredom_accumulator_{0.0f};          // Increases when low novelty
+    double last_dmn_switch_{0.0};              // For network cycling
+    enum class DMNFocus { INTROSPECTION, SALIENCE, EXPLORATION } dmn_focus_{DMNFocus::INTROSPECTION};
+    std::vector<int> recent_active_nodes_;     // For contextual baseline seeding
+    
     double get_timestamp() const;
     float estimate_cpu_load() const;
+    
+    // Adaptive baseline helpers
+    void update_baseline_targets(int active_nodes, float entropy, float coherence);
+    std::vector<int> sample_contextual_seeds(int k);
+    float compute_curiosity_drive() const;
+    float compute_boredom_drive() const;
 };
 
 } // namespace cognitive_os
