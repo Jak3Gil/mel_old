@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 namespace melvin {
 namespace evolution {
@@ -256,6 +257,191 @@ void DynamicReasoningParams::apply_to_goal_stack(void* goal_stack_ptr) const {
     goal_stack->set_max_turns_inactive(max_turns_inactive);
     goal_stack->set_min_importance(min_goal_importance);
     goal_stack->set_max_context_nodes(max_context_nodes);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONTINUOUS EVOLUTION IMPLEMENTATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+std::vector<std::pair<std::string, float*>> DynamicGenome::get_all_gene_ptrs() {
+    return {
+        // Activation field genes
+        {"global_decay_rate", &reasoning_params_.global_decay_rate},
+        {"activation_threshold", &reasoning_params_.activation_threshold},
+        {"spreading_factor", &reasoning_params_.spreading_factor},
+        {"max_activation", &reasoning_params_.max_activation},
+        {"kwta_sparsity", &reasoning_params_.kwta_sparsity},
+        
+        // Hebbian learning genes
+        {"hebbian_learning_rate", &reasoning_params_.hebbian_learning_rate},
+        {"anti_hebbian_rate", &reasoning_params_.anti_hebbian_rate},
+        {"min_edge_weight", &reasoning_params_.min_edge_weight},
+        {"max_edge_weight", &reasoning_params_.max_edge_weight},
+        {"weight_decay", &reasoning_params_.weight_decay},
+        
+        // Scoring genes
+        {"activation_weight", &reasoning_params_.activation_weight},
+        {"semantic_bias_weight", &reasoning_params_.semantic_bias_weight},
+        {"coherence_weight", &reasoning_params_.coherence_weight},
+        {"recency_weight", &reasoning_params_.recency_weight},
+        {"novelty_weight", &reasoning_params_.novelty_weight},
+        
+        // Meta-learning genes
+        {"learning_rate", &reasoning_params_.learning_rate},
+        {"adaptation_rate", &reasoning_params_.adaptation_rate},
+        {"confidence_decay", &reasoning_params_.confidence_decay},
+        {"mutation_rate", &reasoning_params_.mutation_rate},
+        {"mutation_magnitude", &reasoning_params_.mutation_magnitude},
+        
+        // Traversal genes
+        {"temperature", &reasoning_params_.temperature},
+        {"confidence_threshold", &reasoning_params_.confidence_threshold},
+        {"semantic_threshold", &reasoning_params_.semantic_threshold},
+        {"hop_decay", &reasoning_params_.hop_decay},
+        
+        // Mode switching genes
+        {"exploratory_threshold", &reasoning_params_.exploratory_threshold},
+        {"exploitative_threshold", &reasoning_params_.exploitative_threshold},
+        {"deep_reasoning_threshold", &reasoning_params_.deep_reasoning_threshold},
+        {"mode_switching_hysteresis", &reasoning_params_.mode_switching_hysteresis},
+        
+        // Working memory genes
+        {"base_decay_rate", &reasoning_params_.base_decay_rate},
+        {"confidence_decay_factor", &reasoning_params_.confidence_decay_factor},
+        {"salience_threshold", &reasoning_params_.salience_threshold},
+        {"wm_refresh_boost", &reasoning_params_.wm_refresh_boost},
+        
+        // Multi-modal genes
+        {"text_modality_weight", &reasoning_params_.text_modality_weight},
+        {"vision_modality_weight", &reasoning_params_.vision_modality_weight},
+        {"audio_modality_weight", &reasoning_params_.audio_modality_weight},
+        
+        // Conversational genes
+        {"theta_frequency", &reasoning_params_.theta_frequency},
+        {"speech_threshold", &reasoning_params_.speech_threshold},
+        {"listen_threshold", &reasoning_params_.listen_threshold},
+        {"energy_threshold", &reasoning_params_.energy_threshold},
+        {"min_state_duration", &reasoning_params_.min_state_duration},
+        
+        // Emotional genes
+        {"base_tempo", &reasoning_params_.base_tempo},
+        {"novelty_tempo_scale", &reasoning_params_.novelty_tempo_scale},
+        {"confidence_tempo_scale", &reasoning_params_.confidence_tempo_scale},
+        {"arousal_pitch_scale", &reasoning_params_.arousal_pitch_scale},
+        {"hedge_confidence_threshold", &reasoning_params_.hedge_confidence_threshold},
+        
+        // Goal stack genes
+        {"goal_decay_rate", &reasoning_params_.goal_decay_rate},
+        {"goal_reactivation_boost", &reasoning_params_.goal_reactivation_boost},
+        {"goal_overlap_threshold", &reasoning_params_.goal_overlap_threshold},
+        {"min_goal_importance", &reasoning_params_.min_goal_importance},
+        
+        // Baseline activity genes
+        {"baseline_activity_min", &reasoning_params_.baseline_activity_min},
+        {"baseline_activity_max", &reasoning_params_.baseline_activity_max},
+        {"baseline_adaptation_rate", &reasoning_params_.baseline_adaptation_rate},
+        {"curiosity_baseline_scale", &reasoning_params_.curiosity_baseline_scale},
+        {"boredom_baseline_scale", &reasoning_params_.boredom_baseline_scale},
+        {"baseline_decay_multiplier", &reasoning_params_.baseline_decay_multiplier},
+        {"baseline_power_budget", &reasoning_params_.baseline_power_budget},
+        {"dmn_cycle_period", &reasoning_params_.dmn_cycle_period},
+        {"introspection_bias", &reasoning_params_.introspection_bias},
+        {"novelty_exploration_weight", &reasoning_params_.novelty_exploration_weight},
+    };
+}
+
+void DynamicGenome::set_gene(const std::string& name, float value) {
+    auto genes = get_all_gene_ptrs();
+    for (auto& [gene_name, gene_ptr] : genes) {
+        if (gene_name == name) {
+            *gene_ptr = value;
+            return;
+        }
+    }
+}
+
+float DynamicGenome::get_gene(const std::string& name) const {
+    // Copy to avoid const issues
+    auto self = const_cast<DynamicGenome*>(this);
+    auto genes = self->get_all_gene_ptrs();
+    for (auto& [gene_name, gene_ptr] : genes) {
+        if (gene_name == name) {
+            return *gene_ptr;
+        }
+    }
+    return 0.0f;
+}
+
+void DynamicGenome::mutate_random_genes(int count) {
+    auto genes = get_all_gene_ptrs();
+    
+    // Seed random once
+    static std::random_device rd;
+    static std::mt19937 rng(rd());
+    
+    // Select random genes
+    std::uniform_int_distribution<int> gene_dist(0, genes.size() - 1);
+    std::uniform_real_distribution<float> mutation_dist(-1.0f, 1.0f);
+    
+    for (int i = 0; i < count; i++) {
+        int idx = gene_dist(rng);
+        auto& [name, ptr] = genes[idx];
+        
+        // Mutate by mutation_magnitude
+        float delta = mutation_dist(rng) * reasoning_params_.mutation_magnitude;
+        *ptr += delta;
+        
+        // Clamp to reasonable bounds (0.001 to 10.0 for most params)
+        *ptr = std::max(0.001f, std::min(10.0f, *ptr));
+    }
+    
+    // Re-normalize weights
+    reasoning_params_.normalize_weights();
+    reasoning_params_.normalize_modality_weights();
+}
+
+void DynamicGenome::evolve_towards_intelligence(float dt) {
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CONTINUOUS SELF-IMPROVEMENT (no external prompt)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Goal: Increase processing efficiency and learning capacity
+    
+    // 1. Increase Hebbian learning rate (learn faster connections)
+    reasoning_params_.hebbian_learning_rate += 0.0001f * dt;
+    reasoning_params_.hebbian_learning_rate = std::min(0.05f, reasoning_params_.hebbian_learning_rate);
+    
+    // 2. Increase spreading factor (better activation propagation)
+    reasoning_params_.spreading_factor += 0.0001f * dt;
+    reasoning_params_.spreading_factor = std::min(0.95f, reasoning_params_.spreading_factor);
+    
+    // 3. Decrease global decay (retain information longer)
+    reasoning_params_.global_decay_rate *= (1.0f - 0.0001f * dt);
+    reasoning_params_.global_decay_rate = std::max(0.01f, reasoning_params_.global_decay_rate);
+    
+    // 4. Increase novelty weight (seek new information)
+    reasoning_params_.novelty_weight += 0.0001f * dt;
+    reasoning_params_.novelty_weight = std::min(0.5f, reasoning_params_.novelty_weight);
+    
+    // 5. Increase working memory slots (more capacity)
+    if (dt > 10.0f) {  // Every 10 seconds
+        reasoning_params_.working_memory_slots = std::min(7, reasoning_params_.working_memory_slots + 1);
+    }
+    
+    // 6. Increase max active nodes (richer representations)
+    reasoning_params_.max_active_nodes += static_cast<int>(0.1f * dt);
+    reasoning_params_.max_active_nodes = std::min(2000, reasoning_params_.max_active_nodes);
+    
+    // 7. Random exploration (mutation)
+    static float mutation_timer = 0.0f;
+    mutation_timer += dt;
+    if (mutation_timer > 30.0f) {  // Every 30 seconds, try random mutations
+        mutate_random_genes(2);
+        mutation_timer = 0.0f;
+    }
+    
+    // Re-normalize weights
+    reasoning_params_.normalize_weights();
 }
 
 } // namespace evolution

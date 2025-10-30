@@ -25,30 +25,68 @@ namespace evolution {
  * These parameters self-tune based on reasoning success
  */
 struct DynamicReasoningParams {
-    // Scoring weights (α, β, γ) - sum to 1.0
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ACTIVATION FIELD GENES (Spreading dynamics)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    float global_decay_rate;       // field-wide energy dissipation (0.01-0.1)
+    float activation_threshold;    // min energy to be "active" (0.05-0.3)
+    float spreading_factor;        // how much activation spreads (0.5-0.95)
+    float max_activation;          // energy ceiling per node (1.0-10.0)
+    float kwta_sparsity;           // top-k winners to keep (0.05-0.2)
+    int max_active_nodes;          // hard limit on active nodes (100-2000)
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // HEBBIAN LEARNING GENES (Synaptic plasticity)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    float hebbian_learning_rate;   // η - "fire together wire together" (0.001-0.05)
+    float anti_hebbian_rate;       // weakening for non-coactivated (0.0-0.01)
+    float min_edge_weight;         // prune edges below this (0.01-0.1)
+    float max_edge_weight;         // cap edge weights (1.0-10.0)
+    float weight_decay;            // synaptic forgetting (0.001-0.01)
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // SCORING GENES (Concept ranking)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     float activation_weight;       // β - raw activation influence
     float semantic_bias_weight;    // α - semantic alignment influence
     float coherence_weight;        // γ - path coherence influence
+    float recency_weight;          // δ - how much time matters (0.0-0.3)
+    float novelty_weight;          // ε - reward for new concepts (0.0-0.5)
     
-    // Learning parameters
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // META-LEARNING GENES (Self-tuning)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     float learning_rate;           // η - edge weight update rate
-    float adaptation_rate;         // κ - self-tuning speed
+    float adaptation_rate;         // κ - genome self-tuning speed
     float confidence_decay;        // how fast to forget unreliable edges
+    float mutation_rate;           // probability of random parameter change (0.0-0.1)
+    float mutation_magnitude;      // size of random perturbations (0.01-0.2)
     
-    // Traversal control
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // TRAVERSAL GENES (Path following)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     float temperature;             // β(t) - exploration vs exploitation
     float confidence_threshold;    // θ - minimum confidence to answer
     float semantic_threshold;      // minimum similarity to follow edge
+    int max_hops;                  // maximum reasoning depth (2-10)
+    float hop_decay;               // energy loss per hop (0.7-0.95)
     
-    // Mode switching thresholds
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // MODE SWITCHING GENES (Adaptive behavior)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     float exploratory_threshold;   // switch to exploration when confidence below this
     float exploitative_threshold;  // switch to exploitation when confidence above this
     float deep_reasoning_threshold; // trigger multi-hop when complexity above this
+    float mode_switching_hysteresis; // prevent rapid mode flipping (0.05-0.2)
     
-    // Working memory
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // WORKING MEMORY GENES (Attention buffer)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     float base_decay_rate;         // baseline memory decay
     float confidence_decay_factor; // how much confidence reduces decay
     int working_memory_slots;      // 4-7 active concepts
+    float salience_threshold;      // min importance to enter WM (0.1-0.5)
+    float wm_refresh_boost;        // energy boost for WM items (0.1-0.5)
     
     // Multi-modal
     float text_modality_weight;    // relative importance
@@ -94,21 +132,48 @@ struct DynamicReasoningParams {
     float novelty_exploration_weight;   // weight for curiosity-driven exploration (0.2-0.7)
     
     DynamicReasoningParams() :
+        // Activation field defaults
+        global_decay_rate(0.05f),
+        activation_threshold(0.15f),
+        spreading_factor(0.85f),
+        max_activation(5.0f),
+        kwta_sparsity(0.1f),
+        max_active_nodes(1000),
+        // Hebbian learning defaults
+        hebbian_learning_rate(0.01f),
+        anti_hebbian_rate(0.005f),
+        min_edge_weight(0.05f),
+        max_edge_weight(5.0f),
+        weight_decay(0.005f),
+        // Scoring defaults
         activation_weight(0.4f),
         semantic_bias_weight(0.4f),
-        coherence_weight(0.2f),
+        coherence_weight(0.15f),
+        recency_weight(0.05f),
+        novelty_weight(0.2f),
+        // Meta-learning defaults
         learning_rate(0.01f),
         adaptation_rate(0.005f),
         confidence_decay(0.001f),
+        mutation_rate(0.02f),
+        mutation_magnitude(0.1f),
+        // Traversal defaults
         temperature(1.0f),
         confidence_threshold(0.5f),
         semantic_threshold(0.3f),
+        max_hops(5),
+        hop_decay(0.85f),
+        // Mode switching defaults
         exploratory_threshold(0.4f),
         exploitative_threshold(0.8f),
         deep_reasoning_threshold(0.7f),
+        mode_switching_hysteresis(0.1f),
+        // Working memory defaults
         base_decay_rate(0.1f),
         confidence_decay_factor(0.5f),
         working_memory_slots(7),
+        salience_threshold(0.25f),
+        wm_refresh_boost(0.3f),
         text_modality_weight(1.0f),
         vision_modality_weight(1.0f),
         audio_modality_weight(1.0f),
@@ -219,6 +284,25 @@ public:
     
     void adapt_temperature(float current_confidence);
     void adapt_thresholds(float avg_path_length);
+    
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CONTINUOUS EVOLUTION (NEW)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Evolve towards intelligence when idle (no prompt)
+    void evolve_towards_intelligence(float dt);
+    
+    // Random mutation for exploration
+    void mutate_random_genes(int count = 3);
+    
+    // Get all gene pointers for generic access
+    std::vector<std::pair<std::string, float*>> get_all_gene_ptrs();
+    
+    // Set any gene by name
+    void set_gene(const std::string& name, float value);
+    
+    // Get any gene by name
+    float get_gene(const std::string& name) const;
     
     // Serialization
     void save(const std::string& filepath) const;

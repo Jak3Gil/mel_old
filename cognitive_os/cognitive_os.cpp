@@ -400,6 +400,20 @@ void CognitiveOS::tick_learning(float budget_ms) {
 void CognitiveOS::tick_reflection(float budget_ms) {
     if (!intelligence_) return;
     
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CONTINUOUS EVOLUTION: Self-improve when no prompt
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    static double last_evolution_time = get_timestamp();
+    double now = get_timestamp();
+    float dt = static_cast<float>(now - last_evolution_time);
+    
+    // Every reflection tick (~5Hz), evolve genome towards intelligence
+    auto& genome = const_cast<evolution::DynamicGenome&>(intelligence_->genome());
+    genome.evolve_towards_intelligence(dt);
+    
+    last_evolution_time = now;
+    
     // Observe current metrics
     auto& metrics = intelligence_->metrics();
     auto mode = intelligence_->mode();
@@ -460,7 +474,43 @@ float CognitiveOS::estimate_cpu_load() const {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 void CognitiveOS::update_baseline_targets(int active_nodes, float entropy, float coherence) {
-    (void)active_nodes;  // Used implicitly via rolling_avg_activity_
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // SELF-TUNING: Detect baseline failure and evolve parameters
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    
+    // Compute baseline drift (error signal for evolution)
+    baseline_drift_ = target_baseline_activity_ - static_cast<float>(active_nodes);
+    
+    // Detect persistent "death" (0 nodes)
+    if (active_nodes == 0) {
+        consecutive_dead_ticks_++;
+    } else {
+        consecutive_dead_ticks_ = 0;
+    }
+    
+    // If system is dead for too long, trigger emergency evolution
+    if (consecutive_dead_ticks_ > MAX_DEAD_TICKS) {
+        evolve_baseline_parameters();
+        consecutive_dead_ticks_ = 0;  // Reset democracy
+    }
+    
+    // Continuous micro-evolution: if drift is large, gradually adjust
+    if (std::abs(baseline_drift_) > 2.0f && intelligence_) {
+        auto& genome = const_cast<evolution::DynamicGenome&>(intelligence_->genome());
+        auto& params = genome.reasoning_params();
+        
+        // If actual is too low, increase baseline parameters
+        if (baseline_drift_ > 0) {
+            params.baseline_activity_min = std::min(8.0f, params.baseline_activity_min * 1.01f);
+            params.baseline_activity_max = std::min(15.0f, params.baseline_activity_max * 1.01f);
+            params.baseline_power_budget = std::min(0.10f, params.baseline_power_budget * 1.02f);
+        }
+        // If actual is too high (saturated), decrease
+        else {
+            params.baseline_activity_min = std::max(2.0f, params.baseline_activity_min * 0.99f);
+            params.baseline_activity_max = std::max(5.0f, params.baseline_activity_max * 0.99f);
+        }
+    }
     
     // Update boredom: increases when low novelty
     if (entropy < 0.3f) {
@@ -474,6 +524,30 @@ void CognitiveOS::update_baseline_targets(int active_nodes, float entropy, float
     // Low coherence = high surprise = high curiosity
     recent_prediction_error_ = 0.9f * recent_prediction_error_ + 
                                0.1f * (1.0f - coherence);
+}
+
+void CognitiveOS::evolve_baseline_parameters() {
+    if (!intelligence_) return;
+    
+    auto& genome = const_cast<evolution::DynamicGenome&>(intelligence_->genome());
+    auto& params = genome.reasoning_params();
+    
+    std::cout << "🧬 EMERGENCY EVOLUTION: System detected death (0 nodes), self-tuning baseline...\n";
+    
+    // Aggressive parameter increase to revive system
+    params.baseline_activity_min = std::min(8.0f, params.baseline_activity_min * 1.2f);
+    params.baseline_activity_max = std::min(15.0f, params.baseline_activity_max * 1.2f);
+    params.baseline_power_budget = std::min(0.10f, params.baseline_power_budget * 1.5f);
+    params.baseline_adaptation_rate = std::min(0.1f, params.baseline_adaptation_rate * 1.3f);
+    params.curiosity_baseline_scale = std::min(0.5f, params.curiosity_baseline_scale * 1.2f);
+    
+    // Reset target to be more aggressive
+    target_baseline_activity_ = params.baseline_activity_max;
+    rolling_avg_activity_ = params.baseline_activity_min;
+    
+    std::cout << "   ✅ Baseline params evolved: min=" << params.baseline_activity_min 
+              << ", max=" << params.baseline_activity_max 
+              << ", power=" << params.baseline_power_budget << "\n";
 }
 
 std::vector<int> CognitiveOS::sample_contextual_seeds(int k) {

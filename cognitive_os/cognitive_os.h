@@ -158,11 +158,17 @@ private:
     enum class DMNFocus { INTROSPECTION, SALIENCE, EXPLORATION } dmn_focus_{DMNFocus::INTROSPECTION};
     std::vector<int> recent_active_nodes_;     // For contextual baseline seeding
     
+    // Self-tuning state (evolution feedback)
+    float baseline_drift_{0.0f};               // How far actual is from target (error signal)
+    int consecutive_dead_ticks_{0};            // Ticks with 0 nodes (death detection)
+    static constexpr int MAX_DEAD_TICKS = 20;  // After this, trigger emergency evolution
+    
     double get_timestamp() const;
     float estimate_cpu_load() const;
     
     // Adaptive baseline helpers
     void update_baseline_targets(int active_nodes, float entropy, float coherence);
+    void evolve_baseline_parameters();  // Self-tuning when baseline fails
     std::vector<int> sample_contextual_seeds(int k);
     float compute_curiosity_drive() const;
     float compute_boredom_drive() const;
