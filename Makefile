@@ -96,7 +96,7 @@ ALL_SOURCES = $(REASONING_SOURCES) $(COGNITIVE_SOURCES) $(VISION_SOURCES) $(AUDI
 OBJECTS = $(ALL_SOURCES:%.cpp=$(BUILD_DIR)/%.o)
 
 # Production targets only
-TARGETS = $(BIN_DIR)/melvin_jetson $(BIN_DIR)/test_cognitive_os $(BIN_DIR)/test_validator
+TARGETS = $(BIN_DIR)/melvin_jetson $(BIN_DIR)/melvin_chat $(BIN_DIR)/test_cognitive_os $(BIN_DIR)/test_validator
 
 .PHONY: all clean directories
 
@@ -124,6 +124,12 @@ $(BIN_DIR)/melvin_jetson: melvin_jetson.cpp $(OBJECTS)
 	@echo "🔨 Linking melvin_jetson (production)..."
 	$(CXX) $(CXXFLAGS) $< $(OBJECTS) $(LDFLAGS) -o $@
 	@echo "✅ Built: $@ (with USB cameras, audio, CAN bus)"
+
+# ChatGPT-style interactive interface
+$(BIN_DIR)/melvin_chat: melvin_chat.cpp $(OBJECTS)
+	@echo "🔨 Linking melvin_chat (interactive)..."
+	$(CXX) $(CXXFLAGS) $< $(OBJECTS) $(LDFLAGS) -o $@
+	@echo "✅ Built: $@ (ChatGPT-style interface)"
 
 # Production tests
 $(BIN_DIR)/test_cognitive_os: test_cognitive_os.cpp $(OBJECTS)
