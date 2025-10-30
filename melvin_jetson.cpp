@@ -304,16 +304,20 @@ void audio_output_loop(EventBus* bus, const std::string& alsa_device) {
 #endif
     
     while (g_running.load()) {
-        // Poll for cognitive answers and speak them
+        // Poll for cognitive answers and output them
         auto answers = bus->poll(topics::COG_ANSWER);
         
         for (const auto& event : answers) {
             auto answer = event.get<CogAnswer>();
             if (answer && !answer->text.empty()) {
-                std::cout << "💬 Melvin says: " << answer->text << "\n";
+                // Generate text output (colored, ChatGPT-style)
+                std::cout << "\n💬 \033[1;32mMelvin:\033[0m " << answer->text << "\n";
+                std::cout << "   \033[2m[confidence: " << answer->confidence << "]\033[0m\n";
                 
-                // TODO: Text-to-speech synthesis
-                // For now, just log
+#ifdef __linux__
+                // TODO: Text-to-speech synthesis with ALSA when available
+                // For now, text output works everywhere
+#endif
             }
         }
         
@@ -365,13 +369,28 @@ void motor_control_loop(EventBus* bus, const std::string& can_interface) {
     
     close(s);
 #else
-    (void)bus;
     (void)can_interface;
-    std::cout << "   ℹ️  Motor control only available on Linux (stub on Mac)\n";
+    std::cout << "   ℹ️  Motor control: Text output mode\n";
+#endif
+    
+    // Text output mode (fallback for no hardware)
     while (g_running.load()) {
+        auto motor_events = bus->poll(topics::MOTOR_STATE);
+        
+        for (const auto& event : motor_events) {
+            auto motor_state = event.get<MotorState>();
+            if (motor_state && !motor_state->joint_pos.empty()) {
+                std::cout << "🦾 \033[1;33mMotor Action:\033[0m ";
+                for (size_t i = 0; i < motor_state->joint_pos.size(); i++) {
+                    std::cout << "J" << i << "=" << motor_state->joint_pos[i];
+                    if (i < motor_state->joint_pos.size() - 1) std::cout << ", ";
+                }
+                std::cout << "\n";
+            }
+        }
+        
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-#endif
 }
 
 int main(int, char**) {
