@@ -31,6 +31,7 @@
 
 #include "cognitive_os/cognitive_os.h"
 #include "core/unified_intelligence.h"
+#include "storage/graph_loader.h"
 
 using namespace melvin::cognitive_os;
 using namespace melvin::intelligence;
@@ -94,10 +95,37 @@ bool load_knowledge_graph(
 ) {
     std::cout << "📊 Loading knowledge graph...\n";
     
-    // Try to load from data/
-    // For now, create a small demo graph
-    // In production, this would load from unified_nodes.bin and unified_edges.bin
+    // Prefer unified binary files if available
+    const std::string nodes_bin = "data/unified_nodes.bin";
+    const std::string edges_bin = "data/unified_edges.bin";
+    std::ifstream fn(nodes_bin, std::ios::binary);
+    std::ifstream fe(edges_bin, std::ios::binary);
+    if (fn.good() && fe.good()) {
+        std::cout << "   📦 Using unified binaries: " << nodes_bin << ", " << edges_bin << "\n";
+        fn.close(); fe.close();
+        // Load via GraphLoader
+        melvin::storage::GraphLoader loader;
+        std::unordered_map<int, float> priors;
+        if (!loader.LoadNodesBIN(nodes_bin, id_to_word, word_to_id, priors)) {
+            std::cerr << "   ❌ Failed to read nodes.bin, falling back to demo graph\n";
+        } else if (!loader.LoadEdgesBIN(edges_bin, graph, true)) {
+            std::cerr << "   ❌ Failed to read edges.bin, falling back to demo graph\n";
+        } else {
+            // Create simple text embeddings from labels deterministically (placeholder)
+            for (const auto& kv : id_to_word) {
+                int id = kv.first; const std::string& word = kv.second;
+                std::vector<float> emb(128);
+                size_t hash = std::hash<std::string>{}(word);
+                for (size_t i = 0; i < 128; i++) emb[i] = std::sin(static_cast<float>(hash + i) * 0.01f);
+                embeddings[id] = emb;
+            }
+            std::cout << "   ✅ " << id_to_word.size() << " concepts loaded\n";
+            std::cout << "   ✅ Knowledge graph ready\n\n";
+            return true;
+        }
+    }
     
+    // Fallback: small demo graph
     std::vector<std::string> vocabulary = {
         "hello", "world", "melvin", "robot", "intelligence",
         "see", "hear", "move", "learn", "think",
@@ -105,32 +133,22 @@ bool load_knowledge_graph(
         "red", "blue", "green", "left", "right",
         "forward", "backward", "stop", "go", "turn"
     };
-    
     int node_id = 0;
     for (const auto& word : vocabulary) {
         word_to_id[word] = node_id;
         id_to_word[node_id] = word;
-        
-        // Simple embedding
         std::vector<float> emb(128);
         size_t hash = std::hash<std::string>{}(word);
-        for (size_t i = 0; i < 128; i++) {
-            emb[i] = std::sin(static_cast<float>(hash + i) * 0.01f);
-        }
+        for (size_t i = 0; i < 128; i++) emb[i] = std::sin(static_cast<float>(hash + i) * 0.01f);
         embeddings[node_id] = emb;
-        
         node_id++;
     }
-    
-    // Create basic connections
     auto add_edge = [&](const std::string& from, const std::string& to, float weight) {
         int from_id = word_to_id[from];
         int to_id = word_to_id[to];
         graph[from_id].push_back({to_id, weight});
         graph[to_id].push_back({from_id, weight * 0.8f});
     };
-    
-    // Basic robot vocabulary
     add_edge("melvin", "robot", 0.95f);
     add_edge("robot", "intelligence", 0.9f);
     add_edge("see", "camera", 0.95f);
@@ -144,10 +162,8 @@ bool load_knowledge_graph(
     add_edge("right", "turn", 0.9f);
     add_edge("forward", "move", 0.9f);
     add_edge("backward", "move", 0.9f);
-    
     std::cout << "   ✅ " << vocabulary.size() << " concepts loaded\n";
     std::cout << "   ✅ Knowledge graph ready\n\n";
-    
     return true;
 }
 
@@ -446,6 +462,24 @@ int main(int, char**) {
     
     CognitiveOS os;
     os.attach(&melvin, &field);
+    os.set_word_map(&id_to_word);  // Enable internal query generation
+    // If unified binaries were used, degree map is available from 'graph'
+    {
+        // Compute degrees and mark large graph if size suggests it
+        static std::unordered_map<int,int> node_degree;
+        node_degree.clear();
+        size_t edge_count = 0;
+        for (const auto& kv : graph) {
+            int u = kv.first;
+            const auto& nbrs = kv.second;
+            node_degree[u] += (int)nbrs.size();
+            edge_count += nbrs.size();
+            for (const auto& p : nbrs) node_degree[p.first] += 0; // ensure presence
+        }
+        bool large = id_to_word.size() > 50000 || edge_count > 3000000;
+        os.set_node_degrees(&node_degree);
+        os.set_large_graph(large);
+    }
     
     g_os = &os;  // For signal handler
     

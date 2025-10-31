@@ -89,6 +89,21 @@ public:
     FieldFacade* field() { return field_; }
     
     /**
+     * @brief Set id_to_word map for internal query generation
+     */
+    void set_word_map(const std::unordered_map<int, std::string>* map) { id_to_word_ = map; }
+
+    /**
+     * @brief Provide node degree map (for curiosity bias toward low-degree nodes)
+     */
+    void set_node_degrees(const std::unordered_map<int, int>* deg) { node_degree_ = deg; }
+
+    /**
+     * @brief Hint that a large unified graph is loaded (adjusts dampers)
+     */
+    void set_large_graph(bool v) { large_graph_ = v; }
+    
+    /**
      * @brief Get metrics logger
      */
     MetricsLogger* metrics() { return &metrics_; }
@@ -106,6 +121,9 @@ private:
     FieldFacade* field_;
     melvin::intelligence::UnifiedIntelligence* intelligence_;
     MetricsLogger metrics_;
+    const std::unordered_map<int, std::string>* id_to_word_{nullptr};  // For internal query generation
+    const std::unordered_map<int, int>* node_degree_{nullptr};          // For curiosity bias
+    bool large_graph_{false};
     
     // Services (lightweight, run in scheduler thread)
     std::vector<std::unique_ptr<ServiceBase>> services_;
@@ -157,6 +175,7 @@ private:
     double last_dmn_switch_{0.0};              // For network cycling
     enum class DMNFocus { INTROSPECTION, SALIENCE, EXPLORATION } dmn_focus_{DMNFocus::INTROSPECTION};
     std::vector<int> recent_active_nodes_;     // For contextual baseline seeding
+            double last_internal_query_time_{0.0};     // For autonomous text outputs
     
     // Self-tuning state (evolution feedback)
     float baseline_drift_{0.0f};               // How far actual is from target (error signal)

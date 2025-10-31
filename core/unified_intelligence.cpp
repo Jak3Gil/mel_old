@@ -4,6 +4,7 @@
  */
 
 #include "unified_intelligence.h"
+#include "reasoning/answer_synthesizer.h"
 #include <queue>
 #include <set>
 #include <algorithm>
@@ -108,10 +109,12 @@ UnifiedResult UnifiedIntelligence::reason(const std::string& query) {
     }
     
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // STAGE 4: SYNTHESIZE ANSWER (Intent-driven templates)
+    // STAGE 4: SYNTHESIZE ANSWER (LM-style organic generation)
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     
-    result.answer = synthesize_answer(ranked, result.intent, tokens);
+    // Use organic LM-style generation (no templates)
+    melvin::reasoning::AnswerSynthesizer synthesizer;
+    result.answer = synthesizer.generate_lm_style(result.top_concepts, id_to_word_, result.confidence);
     
     // Generate explanation from path
     if (!ranked.empty() && paths.count(ranked[0].first)) {
@@ -133,10 +136,27 @@ UnifiedResult UnifiedIntelligence::reason(const std::string& query) {
     
     update_metrics(activations, ranked);
     
-    // Copy metrics to result
+    // Copy metrics to result (with fallback if metrics not initialized)
     result.confidence = current_metrics_.confidence;
     result.coherence = current_metrics_.coherence;
     result.novelty = current_metrics_.novelty;
+    
+    if (result.confidence <= 0.0f) {
+        // Derive a confidence from ranked scores as a fallback
+        if (!ranked.empty()) {
+            float top = ranked[0].second;
+            float denom = 0.0f;
+            int take = std::min<int>(5, ranked.size());
+            for (int i = 0; i < take; ++i) denom += std::max(0.0f, ranked[i].second);
+            if (denom > 0.0f) {
+                result.confidence = std::max(0.05f, std::min(0.99f, top / denom));
+            } else {
+                result.confidence = 0.1f;
+            }
+        } else {
+            result.confidence = 0.1f;
+        }
+    }
     
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STAGE 6: HEBBIAN LEARNING (Neurons that fire together wire together)

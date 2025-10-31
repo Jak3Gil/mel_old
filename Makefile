@@ -7,7 +7,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio") -lasound -lrt -lsocketcan
 else
-    LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio")
+LDFLAGS = -pthread $(shell pkg-config --libs opencv4 2>/dev/null || echo "-lopencv_core -lopencv_imgproc -lopencv_videoio")
 endif
 
 # Directories
@@ -24,6 +24,8 @@ METRICS_DIR = core/metrics
 LANGUAGE_DIR = core/language
 COGNITIVE_OS_DIR = cognitive_os
 VALIDATOR_DIR = validator
+CROSSMODAL_DIR = crossmodal
+STORAGE_DIR = storage
 BUILD_DIR = build
 BIN_DIR = bin
 
@@ -90,7 +92,17 @@ VALIDATOR_SOURCES = \
 CORE_UNIFIED = \
 	core/unified_intelligence.cpp
 
-ALL_SOURCES = $(REASONING_SOURCES) $(COGNITIVE_SOURCES) $(VISION_SOURCES) $(AUDIO_SOURCES) $(EVOLUTION_SOURCES) $(FIELDS_SOURCES) $(FEEDBACK_SOURCES) $(METACOGNITION_SOURCES) $(ORCHESTRATOR_SOURCES) $(METRICS_SOURCES) $(LANGUAGE_SOURCES) $(COGNITIVE_OS_SOURCES) $(VALIDATOR_SOURCES) $(CORE_UNIFIED)
+CROSSMODAL_SOURCES = \
+	$(CROSSMODAL_DIR)/cm_space.cpp \
+	$(CROSSMODAL_DIR)/cm_index.cpp \
+	$(CROSSMODAL_DIR)/cm_binding.cpp \
+	$(CROSSMODAL_DIR)/cm_grounder.cpp \
+	$(CROSSMODAL_DIR)/cm_io.cpp
+
+STORAGE_SOURCES = \
+	$(STORAGE_DIR)/graph_loader.cpp
+
+ALL_SOURCES = $(REASONING_SOURCES) $(COGNITIVE_SOURCES) $(VISION_SOURCES) $(AUDIO_SOURCES) $(EVOLUTION_SOURCES) $(FIELDS_SOURCES) $(FEEDBACK_SOURCES) $(METACOGNITION_SOURCES) $(ORCHESTRATOR_SOURCES) $(METRICS_SOURCES) $(LANGUAGE_SOURCES) $(COGNITIVE_OS_SOURCES) $(VALIDATOR_SOURCES) $(CORE_UNIFIED) $(CROSSMODAL_SOURCES) $(STORAGE_SOURCES)
 
 # Object files
 OBJECTS = $(ALL_SOURCES:%.cpp=$(BUILD_DIR)/%.o)
@@ -115,6 +127,8 @@ directories:
 	@mkdir -p $(BUILD_DIR)/$(LANGUAGE_DIR)
 	@mkdir -p $(BUILD_DIR)/$(COGNITIVE_OS_DIR)
 	@mkdir -p $(BUILD_DIR)/$(VALIDATOR_DIR)
+	@mkdir -p $(BUILD_DIR)/$(CROSSMODAL_DIR)
+	@mkdir -p $(BUILD_DIR)/$(STORAGE_DIR)
 	@mkdir -p $(BIN_DIR)
 	@mkdir -p logs
 	@mkdir -p data

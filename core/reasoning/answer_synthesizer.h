@@ -55,6 +55,17 @@ public:
         const std::unordered_map<int, std::string>& id_to_word
     );
     
+    /**
+     * @brief Generate LM-style organic text (no templates)
+     * 
+     * Samples from concept space with connective phrases, like an LM would
+     */
+    std::string generate_lm_style(
+        const std::vector<std::pair<std::string, float>>& top_concepts,
+        const std::unordered_map<int, std::string>& id_to_word,
+        float confidence
+    );
+    
 private:
     // Intent-specific generation
     std::string generate_definition(

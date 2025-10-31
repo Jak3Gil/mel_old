@@ -270,6 +270,128 @@ void CognitiveOS::tick_cognition(float budget_ms) {
             // For now, just update field metrics
         }
     }
+
+    // Autonomous outputs: generate queries from baseline activity (continuous)
+    if (intelligence_ && field_) {
+        double now = get_timestamp();
+        if (now - last_internal_query_time_ > 1.0) { // ~1 Hz thinking cadence
+            // Get currently active nodes from field
+            auto active_nodes = field_->get_active(0.1f);  // Lower threshold to catch baseline
+            
+            // Always run, even if no nodes (baseline will kick in)
+            {
+                // Build query from active concepts  
+                std::stringstream query_builder;
+                int word_count = 0;
+                
+                // Loop-control state (static across ticks)
+                static std::deque<int> ior_concepts; // inhibition of return (recently used)
+                static std::unordered_map<int, double> temp_blacklist_until; // concept_id -> expiry ts
+                static std::vector<std::string> last_lines;
+                if (last_lines.size() > 10) last_lines.erase(last_lines.begin());
+                // Time-limited self-dampers for {melvin, intelligence}
+                if (id_to_word_) {
+                    int melvin_id = -1, intel_id = -1;
+                    for (const auto& kv : *id_to_word_) {
+                        if (kv.second == "melvin") melvin_id = kv.first;
+                        else if (kv.second == "intelligence") intel_id = kv.first;
+                    }
+                    double window_s = large_graph_ ? 60.0 : 300.0;
+                    if (melvin_id >= 0) temp_blacklist_until[melvin_id] = std::max(temp_blacklist_until[melvin_id], now + window_s);
+                    if (intel_id >= 0) temp_blacklist_until[intel_id] = std::max(temp_blacklist_until[intel_id], now + window_s);
+                }
+                // Expire blacklist
+                for (auto it = temp_blacklist_until.begin(); it != temp_blacklist_until.end(); ) {
+                    if (it->second < now) it = temp_blacklist_until.erase(it); else ++it;
+                }
+
+                if (id_to_word_) {
+                    // Limit to 3 words max
+                    int max_words = 2; // keep internal queries short
+                    // Seed from active nodes excluding IOR and blacklist
+                    for (int node_id : active_nodes) {
+                        if ((int)ior_concepts.size() > 10) ior_concepts.pop_front();
+                        bool in_ior = std::find(ior_concepts.begin(), ior_concepts.end(), node_id) != ior_concepts.end();
+                        if (temp_blacklist_until.count(node_id) || in_ior) continue;
+                        auto it = id_to_word_->find(node_id);
+                        if (it != id_to_word_->end()) {
+                            if (word_count > 0) query_builder << " ";
+                            query_builder << it->second;
+                            word_count++;
+                            if (word_count >= max_words) break;
+                        }
+                    }
+                    // Diversify: sample from non-recent, non-active pool (top-k=32, require min out-degree 4)
+                    if (word_count < max_words) {
+                        std::vector<int> candidates; candidates.reserve(64);
+                        for (const auto& kv : *id_to_word_) {
+                            int nid = kv.first;
+                            if (temp_blacklist_until.count(nid)) continue;
+                            if (std::find(active_nodes.begin(), active_nodes.end(), nid) != active_nodes.end()) continue;
+                            if (std::find(ior_concepts.begin(), ior_concepts.end(), nid) != ior_concepts.end()) continue;
+                            if (node_degree_ && node_degree_->count(nid) && node_degree_->at(nid) < 4) continue;
+                            candidates.push_back(nid);
+                            if ((int)candidates.size() >= 32) break;
+                        }
+                        if (!candidates.empty()) {
+                            int pick = candidates[0];
+                            if (node_degree_ && !candidates.empty()) {
+                                // Curiosity bias: prefer lower-degree nodes (+0.15 implicit by picking min degree)
+                                pick = *std::min_element(candidates.begin(), candidates.end(), [&](int a, int b){
+                                    int da = node_degree_->count(a) ? node_degree_->at(a) : 0;
+                                    int db = node_degree_->count(b) ? node_degree_->at(b) : 0;
+                                    return da < db;
+                                });
+                            } else {
+                                pick = candidates[std::min((int)candidates.size()-1, rand() % (int)candidates.size())];
+                            }
+                            auto it2 = id_to_word_->find(pick);
+                            if (it2 != id_to_word_->end()) {
+                                if (word_count > 0) query_builder << " ";
+                                query_builder << it2->second;
+                                word_count++;
+                                ior_concepts.push_back(pick);
+                            }
+                        }
+                    }
+                }
+                
+                // Fallback: use baseline concepts
+                std::string internal_query = word_count > 0 
+                    ? query_builder.str() 
+                    : "melvin intelligence thinking";
+                
+                // Run FULL reasoning pipeline with real concepts
+                auto result = intelligence_->reason(internal_query);
+                
+                // Echo filter: suppress highly repetitive lines (Jaccard with last 5 > 0.7)
+                auto compute_jaccard = [](const std::string& a, const std::string& b){
+                    std::istringstream sa(a), sb(b);
+                    std::unordered_set<std::string> A, B; std::string t;
+                    while (sa >> t) A.insert(t);
+                    while (sb >> t) B.insert(t);
+                    size_t inter = 0; for (const auto& x : A) if (B.count(x)) inter++;
+                    size_t uni = A.size() + B.size() - inter; return uni ? (double)inter / (double)uni : 0.0;
+                };
+                bool echo = false;
+                int check = std::min<int>(8, (int)last_lines.size());
+                for (int i = 0; i < check; ++i) {
+                    if (compute_jaccard(result.answer, last_lines[last_lines.size()-1-i]) > 0.7) { echo = true; break; }
+                }
+                if (!result.answer.empty()) last_lines.push_back(result.answer);
+
+                // Always publish unless echo-filtered
+                CogAnswer answer;
+                answer.timestamp = now;
+                answer.text = (echo ? "..." : (result.answer.empty() ? "..." : result.answer));
+                answer.reasoning_chain = result.reasoning_path;
+                answer.confidence = result.confidence;
+                if (!echo) bus_.publish(topics::COG_ANSWER, answer);
+            }
+            
+            last_internal_query_time_ = now;
+        }
+    }
 }
 
 void CognitiveOS::tick_attention(float budget_ms) {
